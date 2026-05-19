@@ -2,14 +2,14 @@ import { useState } from "react";
 import {
   type ActionFunctionArgs,
   type LoaderFunctionArgs,
-  redirect,
   useFetcher,
   useLoaderData,
+  Link,
 } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { useRouteError } from "react-router";
 import { authenticate } from "~/shopify.server";
-import { fetchPlatformBackend, getBackendUrl, isDevAdminEmail } from "~/platform.server";
+import { fetchPlatformBackend, getBackendUrl, isDevAdmin } from "~/platform.server";
 
 type ShopRow = {
   shop: string;
@@ -27,8 +27,12 @@ type ShopRow = {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
 
-  if (!isDevAdminEmail(session.email)) {
-    throw redirect("/");
+  if (!isDevAdmin(session)) {
+    return {
+      accessDenied: true as const,
+      shop: session.shop,
+      sessionEmail: session.email || null,
+    };
   }
 
   let shops: ShopRow[] = [];
@@ -43,6 +47,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   return {
+    accessDenied: false as const,
     shops,
     backendUrl: getBackendUrl(),
   };
@@ -50,8 +55,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  if (!isDevAdminEmail(session.email)) {
-    throw redirect("/");
+  if (!isDevAdmin(session)) {
+    return { ok: false, message: "You do not have platform admin access." };
   }
 
   const form = await request.formData();
@@ -79,7 +84,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function PlatformDashboard() {
-  const { shops, backendUrl } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+
+  if (data.accessDenied) {
+    return (
+      <div style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
+        <h1>Platform access denied</h1>
+        <p>Your account is not authorized for the platform admin dashboard.</p>
+        <p style={{ color: "#666", fontSize: 14 }}>
+          Shop: <code>{data.shop}</code>
+          {data.sessionEmail ? (
+            <>
+              <br />
+              Email: <code>{data.sessionEmail}</code>
+            </>
+          ) : (
+            <>
+              <br />
+              No staff email on this session (common with offline tokens).
+            </>
+          )}
+        </p>
+        <p style={{ fontSize: 14 }}>
+          Ask the app owner to add your email to <code>DEV_ADMIN_EMAILS</code> or this shop to{" "}
+          <code>DEV_ADMIN_SHOPS</code> on Render, then redeploy tryaura-app.
+        </p>
+        <Link to="/" style={{ color: "#1a1a2e" }}>
+          ← Back to merchant dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  const { shops, backendUrl } = data;
   const fetcher = useFetcher<typeof action>();
   const [selectedShop, setSelectedShop] = useState<string | null>(shops[0]?.shop || null);
 
@@ -124,9 +161,9 @@ export default function PlatformDashboard() {
             Dev dashboard — control generation quotas per store
           </p>
         </div>
-        <a href="/" style={{ color: "#1a1a2e" }}>
+        <Link to="/" style={{ color: "#1a1a2e" }}>
           ← Merchant dashboard
-        </a>
+        </Link>
       </div>
 
       <p style={{ color: "#666", fontSize: 14 }}>

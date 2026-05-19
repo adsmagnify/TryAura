@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { type ActionFunctionArgs, type LoaderFunctionArgs, useRouteError } from "react-router";
-import { useFetcher, useLoaderData, useLocation } from "react-router";
+import { useFetcher, useLoaderData, useLocation, Link } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "~/shopify.server";
-import { isDevAdminEmail } from "~/platform.server";
+import { isDevAdmin } from "~/platform.server";
 
 type DashboardSettings = {
   enabled: boolean;
@@ -212,7 +212,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     backendStatus,
     backendUrl: getBackendUrl(),
     initialTab,
-    isDevAdmin: isDevAdminEmail(session.email),
+    isDevAdmin: isDevAdmin(session),
   };
 };
 
@@ -412,9 +412,9 @@ export default function Index() {
               <span className="icon">📋</span> Activity Logs
             </a>
             {isDevAdmin ? (
-              <a className="nav-item" href="/platform">
+              <Link className="nav-item" to="/platform">
                 <span className="icon">🛠️</span> Platform Admin
-              </a>
+              </Link>
             ) : null}
           </nav>
           <div className="sidebar-footer">v1.0.0 · AI Try-On Plugin</div>

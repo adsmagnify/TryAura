@@ -35,7 +35,7 @@ services:
       - key: API_SECRET
         sync: false
       - key: PLATFORM_ADMIN_SECRET
-        sync: false
+        value: thisisforadminsonly
       - key: NANOBANANA_API_KEY
         sync: false
       - key: BACKEND_URL
@@ -84,6 +84,8 @@ services:
       - key: API_SECRET
         sync: false
       - key: PLATFORM_ADMIN_SECRET
-        sync: false
+        value: thisisforadminsonly
       - key: DEV_ADMIN_EMAILS
-        sync: false
+        value: adsmagnify@gmail.com,adamshopify@gmail.com
+      - key: DEV_ADMIN_SHOPS
+        value: tryaura-hwhcohod.myshopify.com

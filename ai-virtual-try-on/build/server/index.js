@@ -2,7 +2,7 @@ var _a;
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { PassThrough } from "node:stream";
 import { createReadableStreamFromReadable } from "@react-router/node";
-import { ServerRouter, UNSAFE_withComponentProps, useLoaderData, useLocation, Meta, Links, ScrollRestoration, Scripts, Outlet, useFetcher, UNSAFE_withErrorBoundaryProps, useRouteError, redirect, useActionData, Form } from "react-router";
+import { ServerRouter, UNSAFE_withComponentProps, useLoaderData, useLocation, Meta, Links, ScrollRestoration, Scripts, Outlet, useFetcher, Link, UNSAFE_withErrorBoundaryProps, useRouteError, useActionData, Form } from "react-router";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import { AppProvider, Page, Card, FormLayout, Text, TextField, Button } from "@shopify/polaris";
@@ -175,9 +175,17 @@ shopify.sessionStorage;
 function getDevAdminEmails() {
   return (process.env.DEV_ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 }
+function getDevAdminShops() {
+  return (process.env.DEV_ADMIN_SHOPS || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+}
 function isDevAdminEmail(email) {
   if (!email) return false;
   return getDevAdminEmails().includes(email.toLowerCase());
+}
+function isDevAdmin(session) {
+  if (session.email && isDevAdminEmail(session.email)) return true;
+  if (session.shop && getDevAdminShops().includes(session.shop.toLowerCase())) return true;
+  return false;
 }
 function getPlatformAdminSecret() {
   return process.env.PLATFORM_ADMIN_SECRET || "";
@@ -335,7 +343,7 @@ const loader$3 = async ({
     backendStatus,
     backendUrl: getBackendUrl(),
     initialTab,
-    isDevAdmin: isDevAdminEmail(session.email)
+    isDevAdmin: isDevAdmin(session)
   };
 };
 const action$2 = async ({
@@ -402,7 +410,7 @@ const _index = UNSAFE_withComponentProps(function Index() {
     backendStatus,
     backendUrl,
     initialTab,
-    isDevAdmin
+    isDevAdmin: isDevAdmin2
   } = useLoaderData();
   const fetcher = useFetcher();
   const location = useLocation();
@@ -547,9 +555,9 @@ const _index = UNSAFE_withComponentProps(function Index() {
               className: "icon",
               children: "📋"
             }), " Activity Logs"]
-          }), isDevAdmin ? /* @__PURE__ */ jsxs("a", {
+          }), isDevAdmin2 ? /* @__PURE__ */ jsxs(Link, {
             className: "nav-item",
-            href: "/platform",
+            to: "/platform",
             children: [/* @__PURE__ */ jsx("span", {
               className: "icon",
               children: "🛠️"
@@ -1275,8 +1283,12 @@ const loader$2 = async ({
   const {
     session
   } = await authenticate.admin(request);
-  if (!isDevAdminEmail(session.email)) {
-    throw redirect("/");
+  if (!isDevAdmin(session)) {
+    return {
+      accessDenied: true,
+      shop: session.shop,
+      sessionEmail: session.email || null
+    };
   }
   let shops = [];
   try {
@@ -1289,6 +1301,7 @@ const loader$2 = async ({
     shops = [];
   }
   return {
+    accessDenied: false,
     shops,
     backendUrl: getBackendUrl$1()
   };
@@ -1299,8 +1312,11 @@ const action$1 = async ({
   const {
     session
   } = await authenticate.admin(request);
-  if (!isDevAdminEmail(session.email)) {
-    throw redirect("/");
+  if (!isDevAdmin(session)) {
+    return {
+      ok: false,
+      message: "You do not have platform admin access."
+    };
   }
   const form = await request.formData();
   const shop = String(form.get("shop") || "");
@@ -1334,10 +1350,53 @@ const action$1 = async ({
 };
 const platform = UNSAFE_withComponentProps(function PlatformDashboard() {
   var _a2;
+  const data = useLoaderData();
+  if (data.accessDenied) {
+    return /* @__PURE__ */ jsxs("div", {
+      style: {
+        padding: 24,
+        fontFamily: "system-ui, sans-serif"
+      },
+      children: [/* @__PURE__ */ jsx("h1", {
+        children: "Platform access denied"
+      }), /* @__PURE__ */ jsx("p", {
+        children: "Your account is not authorized for the platform admin dashboard."
+      }), /* @__PURE__ */ jsxs("p", {
+        style: {
+          color: "#666",
+          fontSize: 14
+        },
+        children: ["Shop: ", /* @__PURE__ */ jsx("code", {
+          children: data.shop
+        }), data.sessionEmail ? /* @__PURE__ */ jsxs(Fragment, {
+          children: [/* @__PURE__ */ jsx("br", {}), "Email: ", /* @__PURE__ */ jsx("code", {
+            children: data.sessionEmail
+          })]
+        }) : /* @__PURE__ */ jsxs(Fragment, {
+          children: [/* @__PURE__ */ jsx("br", {}), "No staff email on this session (common with offline tokens)."]
+        })]
+      }), /* @__PURE__ */ jsxs("p", {
+        style: {
+          fontSize: 14
+        },
+        children: ["Ask the app owner to add your email to ", /* @__PURE__ */ jsx("code", {
+          children: "DEV_ADMIN_EMAILS"
+        }), " or this shop to", " ", /* @__PURE__ */ jsx("code", {
+          children: "DEV_ADMIN_SHOPS"
+        }), " on Render, then redeploy tryaura-app."]
+      }), /* @__PURE__ */ jsx(Link, {
+        to: "/",
+        style: {
+          color: "#1a1a2e"
+        },
+        children: "← Back to merchant dashboard"
+      })]
+    });
+  }
   const {
     shops,
     backendUrl
-  } = useLoaderData();
+  } = data;
   const fetcher = useFetcher();
   const [selectedShop, setSelectedShop] = useState(((_a2 = shops[0]) == null ? void 0 : _a2.shop) || null);
   const selected = shops.find((s) => s.shop === selectedShop) || null;
@@ -1399,8 +1458,8 @@ const platform = UNSAFE_withComponentProps(function PlatformDashboard() {
           },
           children: "Dev dashboard — control generation quotas per store"
         })]
-      }), /* @__PURE__ */ jsx("a", {
-        href: "/",
+      }), /* @__PURE__ */ jsx(Link, {
+        to: "/",
         style: {
           color: "#1a1a2e"
         },
@@ -1741,7 +1800,7 @@ const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   headers,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "/assets/entry.client-BXBmSE75.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/index-bY15XWlr.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-BXCPhkG3.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/index-bY15XWlr.js", "/assets/context-D3gxlYWB.js"], "css": ["/assets/root-x1cbIzLV.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-CdTwoEZH.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/index-DZqwpE7N.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "ampersand-index": { "id": "ampersand-index", "parentId": "root", "path": "&", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-CdTwoEZH.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/index-DZqwpE7N.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "app-index": { "id": "app-index", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-CdTwoEZH.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/index-DZqwpE7N.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/platform": { "id": "routes/platform", "parentId": "root", "path": "platform", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/platform-C7CMyIf8.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/index-DZqwpE7N.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login": { "id": "routes/auth.login", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth.login-4KueNomV.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/context-D3gxlYWB.js", "/assets/index-bY15XWlr.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": true, "module": "/assets/auth._-CC84KNJ6.js", "imports": ["/assets/chunk-5KNZJZUH-DEhw9y3M.js", "/assets/types-D0aIzRCm.js", "/assets/index-DZqwpE7N.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-f4a861d4.js", "version": "f4a861d4", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-10IOWIqu.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/index-BnGKNj8E.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/root-B8yv4SJk.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/index-BnGKNj8E.js", "/assets/context-DgrDjp5N.js"], "css": ["/assets/root-x1cbIzLV.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-BcYRItR_.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/index-CR7vH6Gl.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "ampersand-index": { "id": "ampersand-index", "parentId": "root", "path": "&", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-BcYRItR_.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/index-CR7vH6Gl.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "app-index": { "id": "app-index", "parentId": "root", "path": "app", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/_index-BcYRItR_.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/index-CR7vH6Gl.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/platform": { "id": "routes/platform", "parentId": "root", "path": "platform", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": true, "module": "/assets/platform-STXW9Itu.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/index-CR7vH6Gl.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.login": { "id": "routes/auth.login", "parentId": "root", "path": "auth/login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": true, "hasErrorBoundary": false, "module": "/assets/auth.login-6QC3hyrn.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/context-DgrDjp5N.js", "/assets/index-BnGKNj8E.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.$": { "id": "routes/auth.$", "parentId": "root", "path": "auth/*", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasDefaultExport": false, "hasErrorBoundary": true, "module": "/assets/auth._-Baqtl1oz.js", "imports": ["/assets/chunk-5KNZJZUH-C21ORtGP.js", "/assets/types-D0aIzRCm.js", "/assets/index-CR7vH6Gl.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-2c019857.js", "version": "2c019857", "sri": void 0 };
 const assetsBuildDirectory = "build\\client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "v8_passThroughRequests": false, "unstable_trailingSlashAwareDataRequests": false, "unstable_previewServerPrerendering": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };

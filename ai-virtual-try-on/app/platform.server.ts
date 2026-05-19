@@ -1,6 +1,11 @@
 /**
  * Dev/platform env helpers for the embedded app server.
  */
+type DevAdminSession = {
+  email?: string | null;
+  shop?: string;
+};
+
 export function getDevAdminEmails(): string[] {
   return (process.env.DEV_ADMIN_EMAILS || "")
     .split(",")
@@ -8,9 +13,23 @@ export function getDevAdminEmails(): string[] {
     .filter(Boolean);
 }
 
+export function getDevAdminShops(): string[] {
+  return (process.env.DEV_ADMIN_SHOPS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export function isDevAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return getDevAdminEmails().includes(email.toLowerCase());
+}
+
+/** Allow platform access by staff email OR dev store domain (offline sessions often have no email). */
+export function isDevAdmin(session: DevAdminSession): boolean {
+  if (session.email && isDevAdminEmail(session.email)) return true;
+  if (session.shop && getDevAdminShops().includes(session.shop.toLowerCase())) return true;
+  return false;
 }
 
 export function getPlatformAdminSecret(): string {
