@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { type ActionFunctionArgs, type LoaderFunctionArgs, useRouteError } from "react-router";
 import { useFetcher, useLoaderData, useLocation } from "react-router";
+import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "~/shopify.server";
 
 type DashboardSettings = {
@@ -751,3 +752,9 @@ input[type="color"] { padding: 4px; height: 40px; cursor: pointer; }
   .content { padding: 20px 16px; }
 }
 `;
+
+export function ErrorBoundary() {
+  return boundary.error(useRouteError());
+}
+
+export const headers = boundary.headers;
