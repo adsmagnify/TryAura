@@ -1,0 +1,19 @@
+# Dev: URLs updated by `shopify app dev`
+# Production: set application_url to https://tryaura-app.onrender.com then run `shopify app deploy`
+
+client_id = "5a8a20c196783d41487e34339ebc5989"
+name = "TryAura"
+application_url = "https://localhost"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-04"
+
+[access_scopes]
+scopes = "read_products,write_products,read_themes,write_themes,read_customers"
+
+[auth]
+redirect_urls = [ "https://localhost/auth/callback" ]

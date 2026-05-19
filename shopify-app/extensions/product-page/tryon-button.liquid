@@ -1,0 +1,13 @@
+{% comment %}
+  TryAura Virtual Try-On — add to product template: {% render 'tryon-button' %}
+{% endcomment %}
+{% if settings.tryon_enabled != false %}
+  <script>
+    window.TRYON_BACKEND_URL = {{ settings.tryon_api_url | json }};
+    window.TryOnConfig = {
+      apiUrl: window.TRYON_BACKEND_URL,
+      productId: {{ product.id | json }},
+    };
+  </script>
+  {{ 'tryon-widget.js' | asset_url | script_tag }}
+{% endif %}

@@ -1,0 +1,14 @@
+{
+  "totalJobs": 0,
+  "successfulJobs": 0,
+  "failedJobs": 0,
+  "averageProcessingTimeMs": 0,
+  "dailyUsage": {},
+  "recentActivity": [],
+  "conversionStats": {
+    "tryonSessions": {},
+    "dailyConversions": {},
+    "ordersAfterTryon": []
+  },
+  "pluginInstalledAt": "2026-05-08T10:38:27.879Z"
+}

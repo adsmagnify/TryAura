@@ -1,0 +1,87 @@
+# TryAura on Render + Supabase
+# In Render Dashboard: New → Blueprint → point to this file (repo folder: SHOPIFY)
+
+services:
+  - type: web
+    name: tryaura-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: USE_SUPABASE
+        value: "true"
+      - key: USE_R2_STORAGE
+        value: "false"
+      - key: ENABLE_JOB_WORKER
+        value: "true"
+      - key: LOG_PRETTY
+        value: "false"
+      - key: PORT
+        value: "3001"
+      - key: DATABASE_URL
+        sync: false
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: API_SECRET
+        sync: false
+      - key: NANOBANANA_API_KEY
+        sync: false
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: tryaura-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: tryaura-app
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: tryaura-app
+    runtime: node
+    rootDir: ai-virtual-try-on
+    buildCommand: npm ci && npm run setup && npm run build
+    startCommand: npm run start
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SHOPIFY_API_KEY
+        sync: false
+      - key: SHOPIFY_API_SECRET
+        sync: false
+      - key: SCOPES
+        value: read_products,write_products,read_themes,write_themes,read_customers
+      - key: SHOPIFY_APP_URL
+        fromService:
+          type: web
+          name: tryaura-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HOST
+        fromService:
+          type: web
+          name: tryaura-app
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: TRYON_BACKEND_URL
+        fromService:
+          type: web
+          name: tryaura-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: API_SECRET
+        sync: false
