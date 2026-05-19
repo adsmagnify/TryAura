@@ -186,7 +186,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { shop, settings, stats, backendStatus, initialTab } = useLoaderData<typeof loader>();
+  const { shop, settings, stats, backendStatus, backendUrl, initialTab } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabName>(initialTab);
@@ -369,26 +369,34 @@ export default function Index() {
                   <div className="alert alert-info">ℹ Backend is reachable, but admin API auth failed. Set matching <code style={{ fontFamily: "monospace" }}>API_SECRET</code> for frontend and backend.</div>
                 ) : null}
 
+                {backendStatus === "connected" ? (
+                  <div className="alert alert-success">✓ Backend connected at {backendUrl}</div>
+                ) : null}
+
                 <div className="stats-grid">
                   <div className="stat-card">
                     <div className="stat-label">Total Try-Ons</div>
-                    <div className="stat-value">{stats.totalJobs || 1247}</div>
-                    <div className="stat-change up">↑ 18% this week</div>
+                    <div className="stat-value">{stats.totalJobs}</div>
+                    <div className="stat-change">{stats.totalJobs === 0 ? "No try-ons yet" : "Live from backend"}</div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">Success Rate</div>
-                    <div className="stat-value">{stats.successRate ? `${stats.successRate}%` : "94%"}</div>
-                    <div className="stat-change up">↑ 2% vs last week</div>
+                    <div className="stat-value">{`${stats.successRate}%`}</div>
+                    <div className="stat-change">{stats.totalJobs === 0 ? "—" : "Live from backend"}</div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-label">Avg. Processing</div>
-                    <div className="stat-value">{stats.averageProcessingTimeMs ? `${Math.round(stats.averageProcessingTimeMs / 1000)}s` : "28s"}</div>
-                    <div className="stat-change">Stable</div>
+                    <div className="stat-value">
+                      {stats.averageProcessingTimeMs
+                        ? `${Math.round(stats.averageProcessingTimeMs / 1000)}s`
+                        : "—"}
+                    </div>
+                    <div className="stat-change">{stats.totalJobs === 0 ? "—" : "Live from backend"}</div>
                   </div>
                   <div className="stat-card">
-                    <div className="stat-label">Conversion Lift</div>
-                    <div className="stat-value">+23%</div>
-                    <div className="stat-change up">↑ vs no try-on</div>
+                    <div className="stat-label">Failed Jobs</div>
+                    <div className="stat-value">{stats.failedJobs}</div>
+                    <div className="stat-change">{stats.totalJobs === 0 ? "—" : "Live from backend"}</div>
                   </div>
                 </div>
 
