@@ -9,7 +9,7 @@ services:
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /health
-    plan: starter
+    plan: free
     envVars:
       - key: NODE_ENV
         value: production
@@ -17,6 +17,7 @@ services:
         value: "true"
       - key: USE_R2_STORAGE
         value: "false"
+      # Required for try-on — processes queued jobs in the same Node process (no extra Render service)
       - key: ENABLE_JOB_WORKER
         value: "true"
       - key: LOG_PRETTY
@@ -52,7 +53,7 @@ services:
     rootDir: ai-virtual-try-on
     buildCommand: npm ci && npm run setup && npm run build
     startCommand: npm run start
-    plan: starter
+    plan: free
     envVars:
       - key: NODE_ENV
         value: production
