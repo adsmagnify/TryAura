@@ -1,6 +1,7 @@
 import "@shopify/shopify-api/adapters/node";
 import { shopifyApp, ApiVersion } from "@shopify/shopify-app-react-router/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+import { getAppUrl } from "./env.server";
 import prisma from "./db.server";
 
 function createSessionStorage() {
@@ -12,7 +13,7 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
   apiVersion: ApiVersion.January25,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: (process.env.SHOPIFY_APP_URL || process.env.HOST || "").replace(/\/$/, ""),
+  appUrl: getAppUrl(),
   authPathPrefix: "/auth",
   sessionStorage: createSessionStorage(),
   isEmbeddedApp: true,
