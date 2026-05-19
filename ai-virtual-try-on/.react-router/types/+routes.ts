@@ -20,6 +20,9 @@ type Pages = {
   "/app": {
     params: {};
   };
+  "/auth/login": {
+    params: {};
+  };
   "/auth/*": {
     params: {
       "*": string;
@@ -30,7 +33,7 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/&" | "/app" | "/auth/*";
+    page: "/" | "/&" | "/app" | "/auth/login" | "/auth/*";
   };
   "routes/_index.tsx": {
     id: "routes/_index";
@@ -41,6 +44,10 @@ type RouteFiles = {
   } | {
     id: "app-index";
     page: "/app";
+  };
+  "routes/auth.login.tsx": {
+    id: "routes/auth.login";
+    page: "/auth/login";
   };
   "routes/auth.$.tsx": {
     id: "routes/auth.$";
@@ -53,5 +60,6 @@ type RouteModules = {
   "routes/_index": typeof import("./app/routes/_index.tsx");
   "ampersand-index": typeof import("./app/routes/_index.tsx");
   "app-index": typeof import("./app/routes/_index.tsx");
+  "routes/auth.login": typeof import("./app/routes/auth.login.tsx");
   "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
 };
