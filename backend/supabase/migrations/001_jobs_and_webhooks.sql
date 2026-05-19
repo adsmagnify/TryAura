@@ -3,13 +3,17 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TYPE generation_job_status AS ENUM (
-  'queued',
-  'processing',
-  'retrying',
-  'completed',
-  'failed'
-);
+DO $$ BEGIN
+  CREATE TYPE generation_job_status AS ENUM (
+    'queued',
+    'processing',
+    'retrying',
+    'completed',
+    'failed'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS generation_jobs (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
