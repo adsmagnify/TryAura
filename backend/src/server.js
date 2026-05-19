@@ -83,6 +83,7 @@ app.use(
 app.use("/api/products", require("./routes/products"));
 app.use("/api/tryon", require("./routes/tryon"));
 app.use("/api/admin", require("./routes/admin"));
+app.use("/api/platform", require("./routes/platform"));
 app.use("/auth", require("./routes/auth"));
 
 // Health

@@ -9,6 +9,7 @@ const stats = require("../services/stats");
 const sessionStore = require("../services/sessionStore");
 const { fetchProductImage } = require("../services/productImage");
 const jobStore = require("../services/jobStore");
+const shopSettings = require("../services/shopSettings");
 const { validateUserPhoto, checkFilename, logGuardrailEvent } = require("../services/guardrails");
 const { requireShop } = require("../middleware/requireShop");
 
@@ -146,6 +147,8 @@ router.post("/", limiter, requireShop, upload.fields([
         error: "Garment image required (productId, garmentImage URL, or file upload)",
       });
     }
+
+    await shopSettings.assertCanGenerate(shop);
 
     const idempotencyKey = req.headers["idempotency-key"] || req.body.idempotencyKey || `tryon_${uuidv4()}`;
 

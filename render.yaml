@@ -34,6 +34,8 @@ services:
         sync: false
       - key: API_SECRET
         sync: false
+      - key: PLATFORM_ADMIN_SECRET
+        sync: false
       - key: NANOBANANA_API_KEY
         sync: false
       - key: BACKEND_URL
@@ -80,4 +82,8 @@ services:
           name: tryaura-api
           envVarKey: RENDER_EXTERNAL_URL
       - key: API_SECRET
+        sync: false
+      - key: PLATFORM_ADMIN_SECRET
+        sync: false
+      - key: DEV_ADMIN_EMAILS
         sync: false

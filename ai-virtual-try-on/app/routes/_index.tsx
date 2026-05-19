@@ -3,6 +3,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs, useRouteError } from 
 import { useFetcher, useLoaderData, useLocation } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "~/shopify.server";
+import { isDevAdminEmail } from "~/platform.server";
 
 type DashboardSettings = {
   enabled: boolean;
@@ -20,6 +21,37 @@ type DashboardStats = {
   failedJobs: number;
   successRate: number;
   averageProcessingTimeMs: number;
+  dailyUsed?: number;
+  monthlyUsed?: number;
+  dailyLimit?: number;
+  monthlyLimit?: number;
+};
+
+type UsageInfo = {
+  dailyUsed: number;
+  monthlyUsed: number;
+};
+
+type ActivityItem = {
+  id: string;
+  status: string;
+  productId?: string | null;
+  customerId?: string | null;
+  sessionId?: string | null;
+  error?: string | null;
+  processingTimeMs?: number | null;
+  createdAt?: string;
+  completedAt?: string | null;
+};
+
+type ActivityLog = {
+  id: string;
+  time: string;
+  productLabel: string;
+  status: string;
+  statusLabel: string;
+  duration?: string;
+  error?: string;
 };
 
 type DashboardResponse = {
@@ -31,16 +63,42 @@ type BackendStatus = "connected" | "unauthorized" | "unreachable";
 
 type TabName = "dashboard" | "settings" | "install" | "logs";
 
-type ActivityLog = {
-  time: string;
-  customer: string;
-  product: string;
-  status: "ok" | "fail";
-  duration?: string;
-  provider: string;
-  error?: string;
-};
+function formatActivityTime(iso?: string) {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString();
+}
 
+function formatActivityStatus(status: string) {
+  switch (status) {
+    case "completed":
+      return { label: "Success", tone: "ok" as const };
+    case "failed":
+      return { label: "Failed", tone: "fail" as const };
+    case "processing":
+      return { label: "Processing", tone: "pending" as const };
+    case "queued":
+      return { label: "Queued", tone: "pending" as const };
+    case "retrying":
+      return { label: "Retrying", tone: "pending" as const };
+    default:
+      return { label: status, tone: "pending" as const };
+  }
+}
+
+function mapActivityItem(item: ActivityItem): ActivityLog {
+  const status = formatActivityStatus(item.status);
+  return {
+    id: item.id,
+    time: formatActivityTime(item.createdAt),
+    productLabel: item.productId ? `Product ${item.productId}` : "Try-on job",
+    status: item.status,
+    statusLabel: status.label,
+    duration: item.processingTimeMs ? `${Math.round(item.processingTimeMs / 1000)}s` : undefined,
+    error: item.error || undefined,
+  };
+}
 const defaultSettings: DashboardSettings = {
   enabled: true,
   aiProvider: "nanobanana",
@@ -90,6 +148,8 @@ async function fetchBackend(path: string, init?: RequestInit) {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const shop = session.shop;
+  const shopQuery = `?shop=${encodeURIComponent(shop)}`;
   const url = new URL(request.url);
   const tab = url.searchParams.get("tab");
   const initialTab: TabName =
@@ -99,13 +159,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   let settings = defaultSettings;
   let stats = defaultStats;
+  let usage: UsageInfo = { dailyUsed: 0, monthlyUsed: 0 };
+  let activity: ActivityItem[] = [];
   let backendStatus: BackendStatus = "unreachable";
 
   try {
-    const [healthRes, settingsRes, statsRes] = await Promise.all([
+    const [healthRes, settingsRes, statsRes, activityRes] = await Promise.all([
       fetchBackend("/health"),
-      fetchBackend("/api/admin/settings"),
-      fetchBackend("/api/admin/stats"),
+      fetchBackend(`/api/admin/settings${shopQuery}`),
+      fetchBackend(`/api/admin/stats${shopQuery}`),
+      fetchBackend(`/api/admin/activity${shopQuery}`),
     ]);
 
     if (healthRes.ok) {
@@ -117,8 +180,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     if (settingsRes.ok) {
-      const settingsPayload = (await settingsRes.json()) as { settings?: DashboardSettings };
+      const settingsPayload = (await settingsRes.json()) as {
+        settings?: DashboardSettings;
+        usage?: UsageInfo;
+      };
       if (settingsPayload.settings) settings = settingsPayload.settings;
+      if (settingsPayload.usage) usage = settingsPayload.usage;
       backendStatus = "connected";
     }
 
@@ -127,22 +194,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       if (statsPayload.stats) stats = statsPayload.stats;
       backendStatus = "connected";
     }
+
+    if (activityRes.ok) {
+      const activityPayload = (await activityRes.json()) as { activity?: ActivityItem[] };
+      activity = activityPayload.activity || [];
+    }
   } catch (_error) {
     backendStatus = "unreachable";
   }
 
   return {
-    shop: session.shop,
+    shop,
     settings,
     stats,
+    usage,
+    activity,
     backendStatus,
     backendUrl: getBackendUrl(),
     initialTab,
+    isDevAdmin: isDevAdminEmail(session.email),
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
+  const shopQuery = `?shop=${encodeURIComponent(session.shop)}`;
 
   const formData = await request.formData();
   const intent = String(formData.get("intent") || "");
@@ -160,7 +236,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ),
     };
 
-    const response = await fetchBackend("/api/admin/settings", {
+    const response = await fetchBackend(`/api/admin/settings${shopQuery}`, {
       method: "PATCH",
       body: JSON.stringify(payload),
     });
@@ -169,11 +245,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return { ok: false, message: "Could not save settings. Check backend/API key." } satisfies DashboardResponse;
     }
 
-    return { ok: true, message: "Settings saved and linked to backend." } satisfies DashboardResponse;
+    return { ok: true, message: "Settings saved for your store." } satisfies DashboardResponse;
   }
 
   if (intent === "reset-settings") {
-    const response = await fetchBackend("/api/admin/settings/reset", {
+    const response = await fetchBackend(`/api/admin/settings/reset${shopQuery}`, {
       method: "POST",
     });
     if (!response.ok) {
@@ -186,7 +262,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Index() {
-  const { shop, settings, stats, backendStatus, backendUrl, initialTab } = useLoaderData<typeof loader>();
+  const { shop, settings, stats, usage, activity, backendStatus, backendUrl, initialTab, isDevAdmin } =
+    useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabName>(initialTab);
@@ -195,32 +272,30 @@ export default function Index() {
   const [buttonColor, setButtonColor] = useState(settings.buttonColor || "#1a1a2e");
   const [enabled, setEnabled] = useState(settings.enabled);
   const [watermarkEnabled, setWatermarkEnabled] = useState(settings.watermarkEnabled);
+  const [maxDailyRequests, setMaxDailyRequests] = useState(settings.maxDailyRequests || 100);
+  const [processingMessage, setProcessingMessage] = useState(
+    settings.processingMessage || "Our AI is styling you...",
+  );
 
   const actionData = fetcher.data;
 
+  const activityLogs = useMemo(() => activity.map(mapActivityItem), [activity]);
+
   const csvData = useMemo(() => {
     const rows = [
-      ["shop", shop],
-      ["totalJobs", String(stats.totalJobs)],
-      ["successfulJobs", String(stats.successfulJobs)],
-      ["failedJobs", String(stats.failedJobs)],
-      ["successRate", `${stats.successRate}%`],
-      ["averageProcessingTimeMs", String(stats.averageProcessingTimeMs)],
+      ["time", "product", "status", "duration_sec", "error"],
+      ...activityLogs.map((log) => [
+        log.time,
+        log.productLabel,
+        log.statusLabel,
+        log.duration || "",
+        log.error || "",
+      ]),
     ];
-    return rows.map((row) => row.join(",")).join("\n");
-  }, [shop, stats]);
+    return rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+  }, [activityLogs]);
 
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvData)}`;
-
-  const fakeLogs: ActivityLog[] = [
-    { time: "2 min ago", customer: "#8821", product: "Floral Wrap Dress", status: "ok", duration: "24s", provider: "Nano Banana Pro" },
-    { time: "11 min ago", customer: "#8817", product: "Linen Midi Dress", status: "ok", duration: "31s", provider: "Nano Banana Pro" },
-    { time: "34 min ago", customer: "#8802", product: "N/A", status: "fail", error: "Image too blurry", provider: "Nano Banana Pro" },
-    { time: "1 hr ago", customer: "#8795", product: "Silk Slip Dress", status: "ok", duration: "19s", provider: "Nano Banana Pro" },
-    { time: "1.5 hr ago", customer: "#8771", product: "Boho Maxi Dress", status: "ok", duration: "28s", provider: "Nano Banana Pro" },
-    { time: "2 hr ago", customer: "#8762", product: "Satin Bodycon", status: "fail", error: "Timeout", provider: "Nano Banana Pro" },
-    { time: "3 hr ago", customer: "#8741", product: "Denim Pinafore", status: "ok", duration: "22s", provider: "Nano Banana Pro" },
-  ];
 
   const liquidSnippet = `{% if settings.tryon_enabled != false %}
   <script>
@@ -268,8 +343,8 @@ export default function Index() {
     form.set("aiProvider", selectedProvider);
     form.set("buttonText", buttonText);
     form.set("buttonColor", buttonColor);
-    form.set("maxDailyRequests", String(settings.maxDailyRequests || 100));
-    form.set("processingMessage", settings.processingMessage || "Our AI is styling you...");
+    form.set("maxDailyRequests", String(maxDailyRequests));
+    form.set("processingMessage", processingMessage);
     fetcher.submit(form, { method: "post" });
   };
 
@@ -293,6 +368,7 @@ export default function Index() {
           <div className="sidebar-logo">
             <h1>👗 Virtual Try-On</h1>
             <p>Shopify Plugin Admin</p>
+            <p className="text-sm text-muted" style={{ marginTop: 8 }}>{shop}</p>
           </div>
           <nav className="sidebar-nav">
             <a
@@ -335,6 +411,11 @@ export default function Index() {
             >
               <span className="icon">📋</span> Activity Logs
             </a>
+            {isDevAdmin ? (
+              <a className="nav-item" href="/platform">
+                <span className="icon">🛠️</span> Platform Admin
+              </a>
+            ) : null}
           </nav>
           <div className="sidebar-footer">v1.0.0 · AI Try-On Plugin</div>
         </aside>
@@ -397,6 +478,20 @@ export default function Index() {
                     <div className="stat-label">Failed Jobs</div>
                     <div className="stat-value">{stats.failedJobs}</div>
                     <div className="stat-change">{stats.totalJobs === 0 ? "—" : "Live from backend"}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Daily Usage</div>
+                    <div className="stat-value">
+                      {usage.dailyUsed} / {stats.dailyLimit ?? settings.maxDailyRequests}
+                    </div>
+                    <div className="stat-change">Resets daily</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Monthly Usage</div>
+                    <div className="stat-value">
+                      {usage.monthlyUsed} / {stats.monthlyLimit ?? "—"}
+                    </div>
+                    <div className="stat-change">Set by TryAura platform</div>
                   </div>
                 </div>
 
@@ -467,18 +562,13 @@ export default function Index() {
                       View All →
                     </a>
                   </div>
-                  {fakeLogs.slice(0, 4).map((log) => (
-                    <div className="log-row" key={`${log.customer}-${log.time}`}>
-                      <div className={`log-status ${log.status}`}></div>
-                      <div style={{ flex: 1 }}>
-                        <div>
-                          Customer {log.customer} {log.status === "ok" ? <>tried <strong>{log.product}</strong></> : <>— {log.error}</>}
-                        </div>
-                        <div className="log-meta">{log.time} · {log.provider}{log.duration ? ` · ${log.duration}` : ""}</div>
-                      </div>
-                      <span className={`badge ${log.status === "ok" ? "badge-green" : "badge-red"}`}>{log.status === "ok" ? "Success" : "Failed"}</span>
-                    </div>
-                  ))}
+                  {activityLogs.length === 0 ? (
+                    <p className="text-muted text-sm">No try-ons yet for {shop}.</p>
+                  ) : (
+                    activityLogs.slice(0, 4).map((log) => (
+                      <ActivityRow key={log.id} log={log} compact />
+                    ))
+                  )}
                 </div>
               </div>
             ) : null}
@@ -555,7 +645,13 @@ export default function Index() {
                   <div className="form-grid-2">
                     <div className="form-row">
                       <label className="form-label">Max Daily Requests</label>
-                      <input type="number" defaultValue={settings.maxDailyRequests || 100} min={1} max={10000} />
+                      <input
+                        type="number"
+                        value={maxDailyRequests}
+                        onChange={(e) => setMaxDailyRequests(Number(e.target.value))}
+                        min={1}
+                        max={10000}
+                      />
                     </div>
                     <div className="form-row">
                       <label className="form-label">Max File Size (MB)</label>
@@ -564,7 +660,11 @@ export default function Index() {
                   </div>
                   <div className="form-row">
                     <label className="form-label">Processing Message <span>(shown while AI works)</span></label>
-                    <input type="text" defaultValue={settings.processingMessage || "Our AI is styling you..."} />
+                    <input
+                      type="text"
+                      value={processingMessage}
+                      onChange={(e) => setProcessingMessage(e.target.value)}
+                    />
                   </div>
                   <div className="form-row" style={{ marginBottom: 0 }}>
                     <label className="form-label">Error Message <span>(shown on failure)</span></label>
@@ -607,17 +707,11 @@ export default function Index() {
                     <a className="btn btn-ghost btn-sm" href={csvHref} download="tryon-activity.csv">⬇ Export CSV</a>
                   </div>
                   <div>
-                    {fakeLogs.map((log) => (
-                      <div className="log-row" key={`${log.customer}-${log.time}`}>
-                        <div className={`log-status ${log.status}`}></div>
-                        <div style={{ flex: 1 }}>
-                          <div>Customer {log.customer} · {log.product}</div>
-                          <div className="log-meta">{log.time} · {log.provider}{log.duration ? ` · ${log.duration}` : ""}</div>
-                          {log.error ? <div className="text-sm" style={{ color: "var(--red)" }}>{log.error}</div> : null}
-                        </div>
-                        <span className={`badge ${log.status === "ok" ? "badge-green" : "badge-red"}`}>{log.status === "ok" ? "Success" : "Failed"}</span>
-                      </div>
-                    ))}
+                    {activityLogs.length === 0 ? (
+                      <p className="text-muted text-sm">No activity for {shop} yet.</p>
+                    ) : (
+                      activityLogs.map((log) => <ActivityRow key={log.id} log={log} />)
+                    )}
                   </div>
                 </div>
               </div>
@@ -625,6 +719,32 @@ export default function Index() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ActivityRow({ log, compact = false }: { log: ActivityLog; compact?: boolean }) {
+  const tone = formatActivityStatus(log.status).tone;
+  const badgeClass =
+    tone === "ok" ? "badge-green" : tone === "fail" ? "badge-red" : "badge-amber";
+
+  return (
+    <div className="log-row">
+      <div className={`log-status ${tone}`}></div>
+      <div style={{ flex: 1 }}>
+        <div>
+          <strong>{log.productLabel}</strong>
+          {!compact && log.error ? <> — {log.error}</> : null}
+        </div>
+        <div className="log-meta">
+          {log.time}
+          {log.duration ? ` · ${log.duration}` : ""}
+        </div>
+        {compact && log.error ? (
+          <div className="text-sm" style={{ color: "var(--red)" }}>{log.error}</div>
+        ) : null}
+      </div>
+      <span className={`badge ${badgeClass}`}>{log.statusLabel}</span>
     </div>
   );
 }
@@ -689,6 +809,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
 .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
 .badge-red { background: var(--red-bg); color: var(--red); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .content { padding: 32px; flex: 1; }
 .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 24px; margin-bottom: 20px; }
@@ -744,6 +865,7 @@ input[type="color"] { padding: 4px; height: 40px; cursor: pointer; }
 .log-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .log-status.ok { background: var(--green); }
 .log-status.fail { background: var(--red); }
+.log-status.pending { background: var(--amber); }
 .log-meta { color: var(--text-3); font-size: 12px; font-family: 'DM Mono', monospace; }
 .text-muted { color: var(--text-2); }
 .text-sm { font-size: 13px; }

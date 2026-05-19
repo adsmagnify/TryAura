@@ -1,0 +1,1 @@
+var S;(function(n){n.AppStore="app_store",n.SingleMerchant="single_merchant",n.ShopifyAdmin="shopify_admin"})(S||(S={}));var a;(function(n){n.MissingShop="MISSING_SHOP",n.InvalidShop="INVALID_SHOP"})(a||(a={}));export{a as L};

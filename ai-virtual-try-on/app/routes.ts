@@ -7,6 +7,8 @@ export default [
   route("&", "routes/_index.tsx", { id: "ampersand-index" }),
   // This handles the Shopify-specific /app URL
   route("app", "routes/_index.tsx", { id: "app-index" }),
+  // Dev/platform admin — email must be in DEV_ADMIN_EMAILS
+  route("platform", "routes/platform.tsx"),
   // Login form — must use shopify.login(), not authenticate.admin()
   route("auth/login", "routes/auth.login.tsx"),
   // OAuth callback and other auth paths

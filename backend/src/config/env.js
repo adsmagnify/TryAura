@@ -32,6 +32,12 @@ const env = {
   webhookSecret: process.env.WEBHOOK_SECRET || process.env.SHOPIFY_API_SECRET,
   apiSecret: process.env.API_SECRET,
   apiKeyHeader: process.env.API_KEY_HEADER || "x-tryon-api-key",
+  platformAdminSecret: process.env.PLATFORM_ADMIN_SECRET,
+  platformAdminHeader: process.env.PLATFORM_ADMIN_HEADER || "x-platform-admin-key",
+  devAdminEmails: (process.env.DEV_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 
   nanobananaApiKey: process.env.NANOBANANA_API_KEY,
   aiProvider: process.env.AI_PROVIDER || "nanobanana",

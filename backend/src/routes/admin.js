@@ -1,21 +1,9 @@
 const express = require("express");
-const stats = require("../services/stats");
+const shopSettings = require("../services/shopSettings");
 
 const router = express.Router();
 
-const DEFAULT_SETTINGS = {
-  enabled: true,
-  aiProvider: process.env.AI_PROVIDER || "nanobanana",
-  buttonText: "Try This Dress",
-  buttonColor: "#1a1a2e",
-  maxDailyRequests: 100,
-  watermarkEnabled: false,
-  processingMessage: "Our AI is styling you...",
-};
-
-let settings = { ...DEFAULT_SETTINGS };
-
-function requireAuth(req, res, next) {
+function requireMerchantAuth(req, res, next) {
   const headerName = (process.env.API_KEY_HEADER || "x-tryon-api-key").toLowerCase();
   if (!process.env.API_SECRET || req.headers[headerName] !== process.env.API_SECRET) {
     return res.status(401).json({ success: false, error: "Unauthorized" });
@@ -23,63 +11,101 @@ function requireAuth(req, res, next) {
   return next();
 }
 
-router.get("/settings", requireAuth, (_req, res) => {
-  res.json({ success: true, settings });
-});
-
-router.patch("/settings", requireAuth, (req, res) => {
-  const allowed = [
-    "enabled",
-    "aiProvider",
-    "buttonText",
-    "buttonColor",
-    "maxDailyRequests",
-    "watermarkEnabled",
-    "processingMessage",
-  ];
-  const updates = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
+function requireShopParam(req, res, next) {
+  const shop = req.query.shop || req.body.shop;
+  if (!shop || !String(shop).includes(".myshopify.com")) {
+    return res.status(400).json({ success: false, error: "Valid shop query param required" });
   }
-  settings = { ...settings, ...updates };
-  res.json({ success: true, settings });
+  req.shop = String(shop).replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return next();
+}
+
+function camelToApi(body) {
+  return {
+    enabled: body.enabled,
+    aiProvider: body.aiProvider,
+    buttonText: body.buttonText,
+    buttonColor: body.buttonColor,
+    maxDailyRequests: body.maxDailyRequests,
+    watermarkEnabled: body.watermarkEnabled,
+    processingMessage: body.processingMessage,
+  };
+}
+
+/** Merchant-scoped settings (embedded app passes ?shop=) */
+router.get("/settings", requireMerchantAuth, requireShopParam, async (req, res, next) => {
+  try {
+    const settings = await shopSettings.getSettings(req.shop);
+    const usage = await shopSettings.getUsage(req.shop);
+    res.json({ success: true, settings, usage });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.post("/settings/reset", requireAuth, (_req, res) => {
-  settings = { ...DEFAULT_SETTINGS };
-  res.json({ success: true, settings });
+router.patch("/settings", requireMerchantAuth, requireShopParam, async (req, res, next) => {
+  try {
+    const settings = await shopSettings.upsertSettings(req.shop, camelToApi(req.body));
+    const usage = await shopSettings.getUsage(req.shop);
+    res.json({ success: true, settings, usage });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get("/settings/public", (_req, res) => {
-  res.json({
-    enabled: settings.enabled,
-    buttonText: settings.buttonText,
-    buttonColor: settings.buttonColor,
-    processingMessage: settings.processingMessage,
-  });
+router.post("/settings/reset", requireMerchantAuth, requireShopParam, async (req, res, next) => {
+  try {
+    const settings = await shopSettings.resetSettings(req.shop);
+    const usage = await shopSettings.getUsage(req.shop);
+    res.json({ success: true, settings, usage });
+  } catch (err) {
+    next(err);
+  }
 });
 
-router.get("/stats", requireAuth, (_req, res) => {
-  const s = stats.getStats();
-  const successRate =
-    s.totalJobs > 0 ? Math.round((s.successfulJobs / s.totalJobs) * 100) : 0;
+/** Storefront widget — no auth, shop required */
+router.get("/settings/public", async (req, res, next) => {
+  try {
+    const shop = req.query.shop;
+    if (!shop || !String(shop).includes(".myshopify.com")) {
+      return res.status(400).json({ success: false, error: "shop query param required" });
+    }
+    const normalized = String(shop).replace(/^https?:\/\//, "").replace(/\/$/, "");
+    const settings = await shopSettings.getSettings(normalized);
+    res.json({ success: true, settings: shopSettings.publicSettings(settings) });
+  } catch (err) {
+    next(err);
+  }
+});
 
-  res.json({
-    success: true,
-    stats: {
-      totalJobs: s.totalJobs,
-      successfulJobs: s.successfulJobs,
-      failedJobs: s.failedJobs,
-      successRate,
-      averageProcessingTimeMs: Math.round(s.averageProcessingTimeMs || 0),
-      totalTryons: s.totalTryons,
-      totalConversions: s.totalConversions,
-      conversionRate: s.conversionRate,
-      totalRevenue: s.totalRevenue,
-      recentActivity: s.recentActivity,
-      dailyUsage: s.dailyUsage,
-    },
-  });
+/** Merchant-scoped stats */
+router.get("/stats", requireMerchantAuth, requireShopParam, async (req, res, next) => {
+  try {
+    const stats = await shopSettings.getShopStats(req.shop);
+    const usage = await shopSettings.getUsage(req.shop);
+    const settings = await shopSettings.getSettings(req.shop);
+    res.json({
+      success: true,
+      stats: {
+        ...stats,
+        dailyUsed: usage.dailyUsed,
+        monthlyUsed: usage.monthlyUsed,
+        dailyLimit: settings.maxDailyRequests,
+        monthlyLimit: settings.monthlyGenerationLimit,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/activity", requireMerchantAuth, requireShopParam, async (req, res, next) => {
+  try {
+    const activity = await shopSettings.getRecentActivity(req.shop, 50);
+    res.json({ success: true, activity });
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;
