@@ -3,7 +3,7 @@
 
 client_id = "5a8a20c196783d41487e34339ebc5989"
 name = "TryAura"
-application_url = "https://localhost"
+application_url = "https://tryaura-app.onrender.com"
 embedded = true
 
 [build]
@@ -16,4 +16,4 @@ api_version = "2026-04"
 scopes = "read_products,write_products,read_themes,write_themes,read_customers"
 
 [auth]
-redirect_urls = [ "https://localhost/auth/callback" ]
+redirect_urls = [ "https://tryaura-app.onrender.com/auth/callback" ]
