@@ -49,7 +49,7 @@ const env = {
   enableJobWorker: boolEnv("ENABLE_JOB_WORKER", true),
 
   databaseUrl: process.env.DATABASE_URL,
-  databaseUrlDirect: process.env.DIRECT_URL || process.env.DATABASE_URL_DIRECT,
+  databaseUrlDirect: process.env.DIRECT_URL || process.env.DATABASE_URL_DIRECT || process.env.DATABASE_URL,
 
   r2: {
     accountId: process.env.R2_ACCOUNT_ID,

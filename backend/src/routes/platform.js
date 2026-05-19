@@ -22,6 +22,7 @@ function normalizeShop(shop) {
 /** List all shops with settings + usage */
 router.get("/shops", requirePlatformAuth, async (_req, res, next) => {
   try {
+    await shopSettings.syncInstalledShops();
     const shops = await shopSettings.listShops();
     const rows = await Promise.all(
       shops.map(async (shop) => {

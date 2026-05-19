@@ -6,7 +6,7 @@ services:
     name: tryaura-api
     runtime: node
     rootDir: backend
-    buildCommand: npm ci
+    buildCommand: npm ci && npm run db:migrate
     startCommand: npm start
     healthCheckPath: /health
     plan: free
@@ -62,8 +62,6 @@ services:
       - key: PORT
         value: "3000"
       - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
         sync: false
       - key: SHOPIFY_API_KEY
         sync: false

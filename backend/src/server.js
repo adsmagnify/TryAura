@@ -6,8 +6,10 @@ const helmet = require("helmet");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const { randomUUID } = require("crypto");
+require("./lib/dbUrl");
 const { env, validateProduction } = require("./config/env");
 const { logger } = require("./lib/logger");
+const { ensureSchema } = require("./lib/ensureSchema");
 const { startJobWorker } = require("./workers/jobProcessor");
 
 validateProduction();
@@ -136,7 +138,12 @@ app.use((err, req, res, _next) => {
   });
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", async () => {
+  try {
+    await ensureSchema();
+  } catch (err) {
+    logger.error({ err: err.message }, "Schema setup failed");
+  }
   logger.info({ port: PORT, env: env.nodeEnv }, "TryAura backend started");
   startJobWorker();
 });

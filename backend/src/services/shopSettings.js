@@ -2,6 +2,7 @@
  * Per-shop settings stored in Postgres (shop_settings) with in-memory fallback.
  */
 const { query } = require("../lib/db");
+const { ensureSchema } = require("../lib/ensureSchema");
 const { env } = require("../config/env");
 const { logger } = require("../lib/logger");
 
@@ -39,6 +40,12 @@ const memory = new Map();
 
 function usePostgres() {
   return Boolean((env.databaseUrl || "").startsWith("postgres"));
+}
+
+async function withDb() {
+  if (!usePostgres()) return false;
+  await ensureSchema();
+  return true;
 }
 
 function rowToSettings(row) {
@@ -84,10 +91,39 @@ function mergeDefaults(shop, partial = {}) {
   };
 }
 
+async function listSessionShops() {
+  if (!(await withDb())) return [];
+  try {
+    const { rows } = await query(
+      `SELECT DISTINCT shop FROM "Session" WHERE shop IS NOT NULL AND shop <> '' ORDER BY shop`
+    );
+    return rows.map((r) => r.shop);
+  } catch (err) {
+    logger.warn({ err: err.message }, "Could not read Session table");
+    return [];
+  }
+}
+
+/** Ensure a shop_settings row exists for every installed store (from OAuth Session table). */
+async function syncInstalledShops() {
+  if (!(await withDb())) return [];
+  const shops = await listSessionShops();
+  for (const shop of shops) {
+    await ensureShopRecord(shop);
+  }
+  return shops;
+}
+
+async function ensureShopRecord(shop) {
+  if (!(await withDb())) return;
+  await query(`INSERT INTO shop_settings (shop) VALUES ($1) ON CONFLICT (shop) DO NOTHING`, [shop]);
+}
+
 async function getSettings(shop) {
   if (!shop) throw new Error("shop is required");
 
-  if (usePostgres()) {
+  if (await withDb()) {
+    await ensureShopRecord(shop);
     const { rows } = await query(`SELECT * FROM shop_settings WHERE shop = $1`, [shop]);
     if (rows[0]) return rowToSettings(rows[0]);
     return mergeDefaults(shop);
@@ -109,7 +145,7 @@ async function upsertSettings(shop, updates, { platform = false } = {}) {
     next.maxDailyRequests = current.monthlyGenerationLimit;
   }
 
-  if (usePostgres()) {
+  if (await withDb()) {
     const row = settingsToRow(shop, next);
     await query(
       `INSERT INTO shop_settings (
@@ -151,50 +187,46 @@ async function upsertSettings(shop, updates, { platform = false } = {}) {
 }
 
 async function resetSettings(shop) {
-  if (usePostgres()) {
+  if (await withDb()) {
     await query(`DELETE FROM shop_settings WHERE shop = $1`, [shop]);
+    await ensureShopRecord(shop);
   } else {
     memory.delete(shop);
   }
-  return mergeDefaults(shop);
+  return getSettings(shop);
 }
 
 async function listShops() {
-  if (usePostgres()) {
-    const { rows } = await query(
-      `SELECT DISTINCT shop FROM (
-        SELECT shop FROM shop_settings
-        UNION
-        SELECT shop FROM generation_jobs
-        UNION
-        SELECT shop FROM "Session"
-      ) s
-      WHERE shop IS NOT NULL AND shop <> ''
-      ORDER BY shop`
-    );
+  if (await withDb()) {
+    await syncInstalledShops();
+    const { rows } = await query(`SELECT shop FROM shop_settings ORDER BY shop`);
     return rows.map((r) => r.shop);
   }
   return [...new Set([...memory.keys()])];
 }
 
 async function getUsage(shop) {
-  if (!usePostgres()) {
+  if (!(await withDb())) {
     return { dailyUsed: 0, monthlyUsed: 0 };
   }
 
-  const { rows } = await query(
-    `SELECT
-      COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE) AS daily_used,
-      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', CURRENT_DATE)) AS monthly_used
-     FROM generation_jobs
-     WHERE shop = $1`,
-    [shop]
-  );
+  try {
+    const { rows } = await query(
+      `SELECT
+        COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE) AS daily_used,
+        COUNT(*) FILTER (WHERE created_at >= date_trunc('month', CURRENT_DATE)) AS monthly_used
+       FROM generation_jobs
+       WHERE shop = $1`,
+      [shop]
+    );
 
-  return {
-    dailyUsed: parseInt(rows[0]?.daily_used || "0", 10),
-    monthlyUsed: parseInt(rows[0]?.monthly_used || "0", 10),
-  };
+    return {
+      dailyUsed: parseInt(rows[0]?.daily_used || "0", 10),
+      monthlyUsed: parseInt(rows[0]?.monthly_used || "0", 10),
+    };
+  } catch {
+    return { dailyUsed: 0, monthlyUsed: 0 };
+  }
 }
 
 async function assertCanGenerate(shop) {
@@ -221,7 +253,7 @@ async function assertCanGenerate(shop) {
 }
 
 async function getShopStats(shop) {
-  if (!usePostgres()) {
+  if (!(await withDb())) {
     return {
       totalJobs: 0,
       successfulJobs: 0,
@@ -231,33 +263,43 @@ async function getShopStats(shop) {
     };
   }
 
-  const { rows } = await query(
-    `SELECT
-      COUNT(*) AS total_jobs,
-      COUNT(*) FILTER (WHERE status = 'completed') AS successful_jobs,
-      COUNT(*) FILTER (WHERE status = 'failed') AS failed_jobs,
-      COALESCE(AVG(processing_time_ms) FILTER (WHERE status = 'completed'), 0) AS avg_ms
-     FROM generation_jobs
-     WHERE shop = $1`,
-    [shop]
-  );
+  try {
+    const { rows } = await query(
+      `SELECT
+        COUNT(*) AS total_jobs,
+        COUNT(*) FILTER (WHERE status = 'completed') AS successful_jobs,
+        COUNT(*) FILTER (WHERE status = 'failed') AS failed_jobs,
+        COALESCE(AVG(processing_time_ms) FILTER (WHERE status = 'completed'), 0) AS avg_ms
+       FROM generation_jobs
+       WHERE shop = $1`,
+      [shop]
+    );
 
-  const totalJobs = parseInt(rows[0]?.total_jobs || "0", 10);
-  const successfulJobs = parseInt(rows[0]?.successful_jobs || "0", 10);
-  const failedJobs = parseInt(rows[0]?.failed_jobs || "0", 10);
-  const successRate = totalJobs > 0 ? Math.round((successfulJobs / totalJobs) * 100) : 0;
+    const totalJobs = parseInt(rows[0]?.total_jobs || "0", 10);
+    const successfulJobs = parseInt(rows[0]?.successful_jobs || "0", 10);
+    const failedJobs = parseInt(rows[0]?.failed_jobs || "0", 10);
+    const successRate = totalJobs > 0 ? Math.round((successfulJobs / totalJobs) * 100) : 0;
 
-  return {
-    totalJobs,
-    successfulJobs,
-    failedJobs,
-    successRate,
-    averageProcessingTimeMs: Math.round(parseFloat(rows[0]?.avg_ms || "0")),
-  };
+    return {
+      totalJobs,
+      successfulJobs,
+      failedJobs,
+      successRate,
+      averageProcessingTimeMs: Math.round(parseFloat(rows[0]?.avg_ms || "0")),
+    };
+  } catch {
+    return {
+      totalJobs: 0,
+      successfulJobs: 0,
+      failedJobs: 0,
+      successRate: 0,
+      averageProcessingTimeMs: 0,
+    };
+  }
 }
 
 async function getRecentActivity(shop, limit = 20) {
-  if (!usePostgres()) return [];
+  if (!(await withDb())) return [];
 
   try {
     const { rows } = await query(
@@ -305,6 +347,8 @@ module.exports = {
   upsertSettings,
   resetSettings,
   listShops,
+  syncInstalledShops,
+  ensureShopRecord,
   getUsage,
   assertCanGenerate,
   getShopStats,

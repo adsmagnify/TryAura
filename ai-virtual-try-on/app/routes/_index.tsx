@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { type ActionFunctionArgs, type LoaderFunctionArgs, useRouteError } from "react-router";
 import { useFetcher, useLoaderData, useLocation, Link } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -278,6 +278,15 @@ export default function Index() {
   );
 
   const actionData = fetcher.data;
+
+  useEffect(() => {
+    setButtonText(settings.buttonText || "Try This Dress");
+    setButtonColor(settings.buttonColor || "#1a1a2e");
+    setEnabled(settings.enabled);
+    setWatermarkEnabled(settings.watermarkEnabled);
+    setMaxDailyRequests(settings.maxDailyRequests || 100);
+    setProcessingMessage(settings.processingMessage || "Our AI is styling you...");
+  }, [settings]);
 
   const activityLogs = useMemo(() => activity.map(mapActivityItem), [activity]);
 

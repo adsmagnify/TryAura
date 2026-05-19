@@ -1,3 +1,4 @@
+import "./env.server";
 import { PrismaClient } from "@prisma/client";
 
 let prisma: PrismaClient;

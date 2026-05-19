@@ -1,26 +1,33 @@
 /**
- * Run SQL migrations against DATABASE_URL_DIRECT (not pooler).
- * Usage: DATABASE_URL_DIRECT=postgresql://... node scripts/run-migration.js
+ * Run all SQL migrations in supabase/migrations (use DIRECT_URL / port 5432).
+ * Usage: npm run db:migrate
  */
 require("dotenv").config();
+require("../src/lib/dbUrl");
+
 const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
 
-const url = process.env.DATABASE_URL_DIRECT || process.env.DATABASE_URL;
+const url = process.env.DIRECT_URL || process.env.DATABASE_URL_DIRECT || process.env.DATABASE_URL;
 if (!url) {
-  console.error("Set DATABASE_URL_DIRECT or DATABASE_URL");
+  console.error("Set DIRECT_URL or DATABASE_URL");
   process.exit(1);
 }
 
-const migrationPath = path.join(__dirname, "..", "supabase", "migrations", "001_jobs_and_webhooks.sql");
-const sql = fs.readFileSync(migrationPath, "utf8");
+const migrationsDir = path.join(__dirname, "..", "supabase", "migrations");
 
 async function main() {
   const pool = new Pool({ connectionString: url, ssl: { rejectUnauthorized: false } });
+  const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+
   try {
-    await pool.query(sql);
-    console.log("✅ Migration applied:", migrationPath);
+    for (const file of files) {
+      const sql = fs.readFileSync(path.join(migrationsDir, file), "utf8");
+      console.log("Applying:", file);
+      await pool.query(sql);
+      console.log("✅", file);
+    }
   } finally {
     await pool.end();
   }
