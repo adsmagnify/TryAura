@@ -2,6 +2,7 @@ import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
 export default [
   route("health", "routes/health.tsx"),
+  route("storefront-config", "routes/storefront-config.tsx"),
   // This handles the root URL
   index("routes/_index.tsx"),
   // Shopify embedded navigation can occasionally hit /& during reloads; treat it as dashboard.

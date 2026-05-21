@@ -292,9 +292,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         message: result.error || "Could not sync storefront configuration.",
       } satisfies DashboardResponse;
     }
+    if (result.warning) {
+      return { ok: true, message: result.warning } satisfies DashboardResponse;
+    }
     return {
       ok: true,
-      message: "Store configuration saved. Enable the app embed in your theme if you have not already.",
+      message: "Store configuration saved. If the try-on button is missing, redeploy the theme extension (npm run deploy) and hard-refresh your product page.",
     } satisfies DashboardResponse;
   }
 
@@ -748,7 +751,7 @@ export default function Index() {
                     <InstallStep
                       done={storefrontInstall.apiUrlConfigured}
                       title="App connected"
-                      detail={`Backend URL saved for your store (${backendUrl}).`}
+                      detail={`API URL for storefront: ${storefrontInstall.apiUrl || backendUrl}`}
                     />
                     <InstallStep
                       done={storefrontInstall.embedEnabled}
@@ -772,8 +775,18 @@ export default function Index() {
                   </div>
 
                   <p className="text-sm text-muted" style={{ marginTop: 16, marginBottom: 0 }}>
-                    After clicking the button above, confirm <strong>Virtual Try-On</strong> is on in App embeds, then click <strong>Save</strong> in the theme editor. Works on Online Store 2.0 and vintage themes.
+                    After clicking the button above, confirm <strong>Virtual Try-On</strong> is on in App embeds, then click <strong>Save</strong> in the theme editor.
                   </p>
+                </div>
+
+                <div className="card">
+                  <div className="card-title" style={{ marginBottom: 12 }}>Button not showing?</div>
+                  <ul className="text-sm text-muted" style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7 }}>
+                    <li>On <strong>Dashboard</strong>, ensure <strong>Plugin Active</strong> is on and try-on is enabled.</li>
+                    <li>Run <code style={{ fontFamily: "monospace" }}>npm run deploy</code> once so the theme extension is published, then hard-refresh the product page (Ctrl+Shift+R).</li>
+                    <li>In the theme editor, open App embeds and confirm <strong>Backend API URL</strong> is set (default: tryaura-api.onrender.com).</li>
+                    <li>A 403 on Re-sync is OK — the embed default URL still works. Re-open the app from Shopify Admin if you want metafield sync.</li>
+                  </ul>
                 </div>
 
                 <div className="card">

@@ -1,4 +1,5 @@
 api_version = "2024-10"
 name = "TryAura Storefront"
 handle = "tryaura-storefront"
+uid = "958aba70-651c-e39f-b81c-83f608ad552eed73b103"
 type = "theme"

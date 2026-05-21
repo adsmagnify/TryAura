@@ -4,8 +4,10 @@
 (function () {
   "use strict";
 
+  const FALLBACK_API_URL = "https://tryaura-api.onrender.com";
+
   const CONFIG = {
-    BACKEND_URL: (window.TRYON_BACKEND_URL || window.TryOnConfig?.apiUrl || "").replace(/\/$/, ""),
+    BACKEND_URL: "",
     BUTTON_TEXT: "Virtual Try-On ✨",
     BUTTON_COLOR: "#1a1a2e",
     BUTTON_TEXT_COLOR: "#ffffff",
@@ -21,13 +23,42 @@
   let productId = null;
   let sessionId = null;
 
+  function normalizeShopDomain(shop) {
+    if (!shop) return null;
+    var s = String(shop).trim().toLowerCase();
+    if (!s) return null;
+    if (s.indexOf(".myshopify.com") !== -1) return s;
+    if (s.indexOf(".") === -1) return s + ".myshopify.com";
+    return s;
+  }
+
   function getShopDomain() {
-    return window.Shopify?.shop || null;
+    var candidates = [
+      window.TryOnConfig && window.TryOnConfig.shop,
+      window.Shopify && window.Shopify.shop,
+      document.querySelector('meta[name="shopify-digital-wallet"]') &&
+        document.querySelector('meta[name="shopify-digital-wallet"]').getAttribute("content"),
+    ];
+    for (var i = 0; i < candidates.length; i++) {
+      var normalized = normalizeShopDomain(candidates[i]);
+      if (normalized && normalized.indexOf(".myshopify.com") !== -1) return normalized;
+    }
+    return null;
+  }
+
+  function resolveBackendUrl() {
+    const fromWindow =
+      window.TRYON_BACKEND_URL ||
+      (window.TryOnConfig && window.TryOnConfig.apiUrl) ||
+      "";
+    CONFIG.BACKEND_URL = String(fromWindow || FALLBACK_API_URL).replace(/\/$/, "");
   }
 
   async function loadStoreSettings() {
     const shop = getShopDomain();
-    if (!shop || !CONFIG.BACKEND_URL) return true;
+    if (!shop) return true;
+
+    if (!CONFIG.BACKEND_URL) resolveBackendUrl();
 
     try {
       const res = await fetch(
@@ -40,26 +71,25 @@
       if (data.settings.buttonColor) CONFIG.BUTTON_COLOR = data.settings.buttonColor;
       if (data.settings.processingMessage) CONFIG.PROCESSING_TEXT = data.settings.processingMessage;
     } catch (e) {
-      /* use defaults */
+      /* use defaults — button still shows */
     }
     return true;
   }
 
-  async function init() {
-    if (window.TryOnConfig?.productId) {
+  function detectProductFromPage() {
+    if (window.TryOnConfig && window.TryOnConfig.productId) {
       productId = String(window.TryOnConfig.productId);
-    } else if (window.ShopifyAnalytics?.meta?.product?.id) {
-      productId = String(window.ShopifyAnalytics.meta.product.id);
-    } else {
-      detectProductFromPage();
+      return;
+    }
+    if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product) {
+      productId = String(
+        window.ShopifyAnalytics.meta.product.id || window.ShopifyAnalytics.meta.product.gid || productId
+      );
+    }
+    if (window.Shopify && window.Shopify.theme && window.Shopify.theme.product) {
+      productId = String(window.Shopify.theme.product.id);
     }
 
-    const enabled = await loadStoreSettings();
-    if (!enabled) return;
-    if (productId) addTryOnButton();
-  }
-
-  function detectProductFromPage() {
     document.querySelectorAll('script[type="application/ld+json"]').forEach(function (script) {
       try {
         const data = JSON.parse(script.textContent);
@@ -68,17 +98,38 @@
         }
       } catch (e) { /* ignore */ }
     });
-    const meta = document.querySelector('meta[property="og:product_id"]');
+
+    const meta =
+      document.querySelector('meta[property="og:product_id"]') ||
+      document.querySelector('meta[name="product-id"]') ||
+      document.querySelector('meta[property="product:id"]');
     if (meta && !productId) productId = meta.getAttribute("content");
+
+    const productForm = document.querySelector('form[action*="/cart/add"]');
+    if (productForm && !productId) {
+      const pid = productForm.getAttribute("data-product-id");
+      if (pid) productId = String(pid);
+    }
+  }
+
+  function findCartAnchor() {
+    return (
+      document.querySelector('button[type="submit"][name="add"]') ||
+      document.querySelector('form[action*="/cart/add"] button[type="submit"]') ||
+      document.querySelector(".product-form__submit") ||
+      document.querySelector("[data-add-to-cart]") ||
+      document.querySelector("buy-buttons button") ||
+      document.querySelector(".shopify-payment-button") ||
+      document.querySelector('[data-shopify="payment-button"]') ||
+      document.querySelector(".product-form") ||
+      document.querySelector("main product-form") ||
+      document.querySelector(".product__info")
+    );
   }
 
   function addTryOnButton() {
-    const cartButton =
-      document.querySelector('button[type="submit"][name="add"]') ||
-      document.querySelector(".product-form__submit") ||
-      document.querySelector("[data-add-to-cart]");
-
-    if (!cartButton || document.querySelector(".try-on-button")) return;
+    const anchor = findCartAnchor();
+    if (!anchor || document.querySelector(".try-on-button")) return false;
 
     const button = document.createElement("button");
     button.type = "button";
@@ -87,9 +138,46 @@
     button.style.cssText =
       "display:inline-flex;align-items:center;justify-content:center;padding:12px 24px;" +
       "background:" + CONFIG.BUTTON_COLOR + ";color:" + CONFIG.BUTTON_TEXT_COLOR + ";" +
-      "border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:12px;width:100%;";
+      "border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:12px;" +
+      "width:100%;max-width:100%;box-sizing:border-box;";
+
     button.addEventListener("click", openModal);
-    cartButton.parentNode.insertBefore(button, cartButton.nextSibling);
+
+    const parent = anchor.parentNode || anchor;
+    if (anchor.tagName === "FORM" || anchor.classList && anchor.classList.contains("product-form")) {
+      anchor.appendChild(button);
+    } else {
+      parent.insertBefore(button, anchor.nextSibling);
+    }
+    return true;
+  }
+
+  function watchForCartButton() {
+    if (addTryOnButton()) return;
+    var attempts = 0;
+    var timer = setInterval(function () {
+      attempts += 1;
+      if (addTryOnButton() || attempts > 40) clearInterval(timer);
+    }, 500);
+  }
+
+  async function init() {
+    resolveBackendUrl();
+    detectProductFromPage();
+
+    if (!productId) {
+      detectProductFromPage();
+    }
+
+    const enabled = await loadStoreSettings();
+    if (!enabled) return;
+
+    if (!productId) {
+      console.warn("[TryAura] Could not detect product id on this page.");
+      return;
+    }
+
+    watchForCartButton();
   }
 
   function openModal() {
@@ -97,7 +185,7 @@
     const shop = getShopDomain();
 
     if (!CONFIG.BACKEND_URL || CONFIG.BACKEND_URL.indexOf("your-backend") !== -1) {
-      alert("Try-On is not configured. Set window.TRYON_BACKEND_URL in your theme.");
+      alert("Try-On is not configured. Contact the store owner.");
       return;
     }
     if (!shop) {
@@ -121,17 +209,15 @@
       "<h2 style=\"margin:0 0 8px;font-size:22px;\">" + CONFIG.MODAL_TITLE + "</h2>",
       "<p style=\"color:#666;margin:0 0 20px;\">" + CONFIG.MODAL_SUBTITLE + "</p>",
       '<img class="result-image" alt="Result" style="display:none;max-width:100%;border-radius:12px;margin-bottom:16px;">',
-      '<motion-div class="upload-section" style="text-align:center;">',
+      '<div class="upload-section" style="text-align:center;">',
       '<input type="file" accept="image/*" class="image-input" id="tryon-image-input" style="display:none">',
       '<label for="tryon-image-input" style="display:inline-block;padding:14px 32px;background:#1a1a2e;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;">Upload Your Photo</label>',
-      "</motion-div>",
+      "</div>",
       '<button type="button" class="generate-btn" style="display:none;width:100%;padding:16px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;margin-top:12px;">Generate Try-On</button>',
-      '<motion-div class="processing-state" style="display:none;text-align:center;padding:16px;color:#666;">' + CONFIG.PROCESSING_TEXT + "</motion-div>",
-      '<motion-div class="error-message" style="display:none;padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;margin-top:12px;font-size:14px;"></motion-div>",
+      '<div class="processing-state" style="display:none;text-align:center;padding:16px;color:#666;">' + CONFIG.PROCESSING_TEXT + "</div>",
+      '<div class="error-message" style="display:none;padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;margin-top:12px;font-size:14px;"></div>',
       '<button type="button" class="reset-btn" style="display:none;width:100%;padding:14px;margin-top:12px;border:none;border-radius:8px;background:#f3f4f6;cursor:pointer;font-weight:600;">Try Another Photo</button>',
     ].join("");
-
-    panel.innerHTML = panel.innerHTML.split("motion-div").join("div");
 
     modal.appendChild(panel);
     document.body.appendChild(modal);
@@ -181,7 +267,10 @@
       formData.append("sessionId", sessionId);
       if (customerId) formData.append("customerId", String(customerId));
 
-      fetch(CONFIG.BACKEND_URL + "/api/tryon", { method: "POST", body: formData })
+      fetch(
+        CONFIG.BACKEND_URL + "/api/tryon?shop=" + encodeURIComponent(shop),
+        { method: "POST", body: formData }
+      )
         .then(function (res) { return res.json().then(function (data) { return { res: res, data: data }; }); })
         .then(function (_ref) {
           var res = _ref.res;

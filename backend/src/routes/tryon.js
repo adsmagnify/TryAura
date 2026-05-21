@@ -73,11 +73,12 @@ router.get("/jobs/:id", requireShop, async (req, res, next) => {
   }
 });
 
-router.post("/", limiter, requireShop, upload.fields([
+// requireShop must run after multer — multipart text fields are not in req.body until parsed
+router.post("/", limiter, upload.fields([
   { name: "personImage", maxCount: 1 },
   { name: "userImage", maxCount: 1 },
   { name: "garmentImage", maxCount: 1 },
-]), async (req, res, next) => {
+]), requireShop, async (req, res, next) => {
   const productType = req.body.productType || "unknown";
   const productId = req.body.productId || null;
   const customerId = req.body.customerId || req.body.customer_id || null;

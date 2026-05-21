@@ -15,5 +15,10 @@ api_version = "2026-04"
 [access_scopes]
 scopes = "read_products,write_products,read_themes,write_themes,read_customers"
 
+[shop.metafields.app.api_url]
+type = "single_line_text_field"
+name = "TryAura Backend API URL"
+access.storefront = "public_read"
+
 [auth]
 redirect_urls = [ "https://tryaura-app.onrender.com/auth/callback" ]
