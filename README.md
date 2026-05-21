@@ -35,10 +35,9 @@ SHOPIFY/
 │   ├── .env.example
 │   ├── tsconfig.json
 │   └── vite.config.ts
-└── shopify-app/             # Theme app extension
-    └── extensions/
-        └── product-page/
-            └── tryon-button.liquid
+└── ai-virtual-try-on/extensions/tryaura-storefront/  # Theme app extension (app embed)
+    ├── blocks/tryon-embed.liquid
+    └── assets/tryon-widget.js
 ```
 
 ## Quick Start Guide
@@ -136,30 +135,18 @@ Expected response:
 }
 ```
 
-### 9. Install Storefront Widget
+### 9. Enable Storefront Widget (one click for merchants)
 
-Choose one method:
+Deploy the theme app extension once (from `ai-virtual-try-on`):
 
-**Option A: Theme App Extension (Recommended)**
 ```bash
-# From SHOPIFY root
-shopify app deploy --extension=shopify-app/extensions/product-page
+cd ai-virtual-try-on
+npm run deploy
 ```
-Then go to your Shopify admin → Online Store → Themes → Customize → Add section → "Virtual Try-On Button"
 
-**Option B: Manual Theme Editing**
-Copy the code from `STOREFRONT_INSTALLATION.md` (original repo) into your product template.
+Merchants then open the TryAura app → **Storefront** tab → **Enable on my theme**. That opens the theme editor with the Virtual Try-On app embed ready; they click **Save**. No manual upload of `tryon-widget.js`, Liquid snippets, or `settings_schema.json` edits.
 
-**Option C: Script Tags**
-Add to `theme.liquid`:
-```liquid
-{% if template == 'product' %}
-  <script>
-    window.TRYON_BACKEND_URL = 'https://xxx.trycloudflare.com';
-  </script>
-  <script src="https://xxx.trycloudflare.com/tryon-widget.js" async></script>
-{% endif %}
-```
+The app automatically saves the backend API URL to shop metafields on install.
 
 ### 10. Test the Widget
 

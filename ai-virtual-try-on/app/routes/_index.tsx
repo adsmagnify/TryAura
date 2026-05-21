@@ -4,6 +4,11 @@ import { useFetcher, useLoaderData, useLocation, Link } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "~/shopify.server";
 import { isDevAdmin } from "~/platform.server";
+import {
+  getStorefrontInstallStatus,
+  syncShopApiMetafield,
+  type StorefrontInstallStatus,
+} from "~/theme-install.server";
 
 type DashboardSettings = {
   enabled: boolean;
@@ -147,8 +152,9 @@ async function fetchBackend(path: string, init?: RequestInit) {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
+  const backendUrl = getBackendUrl();
   const shopQuery = `?shop=${encodeURIComponent(shop)}`;
   const url = new URL(request.url);
   const tab = url.searchParams.get("tab");
@@ -203,6 +209,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     backendStatus = "unreachable";
   }
 
+  let storefrontInstall: StorefrontInstallStatus = {
+    apiUrlConfigured: false,
+    embedEnabled: false,
+    themeEditorUrl: `https://${shop}/admin/themes/current/editor?context=apps&template=product`,
+  };
+
+  try {
+    storefrontInstall = await getStorefrontInstallStatus(admin, shop, backendUrl);
+    if (!storefrontInstall.apiUrlConfigured) {
+      await syncShopApiMetafield(admin, backendUrl.replace(/\/$/, ""));
+      storefrontInstall = await getStorefrontInstallStatus(admin, shop, backendUrl);
+    }
+  } catch {
+    /* Theme API unavailable — UI still shows enable link */
+  }
+
   return {
     shop,
     settings,
@@ -210,14 +232,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     usage,
     activity,
     backendStatus,
-    backendUrl: getBackendUrl(),
+    backendUrl,
     initialTab,
     isDevAdmin: isDevAdmin(session),
+    storefrontInstall,
   };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shopQuery = `?shop=${encodeURIComponent(session.shop)}`;
 
   const formData = await request.formData();
@@ -258,12 +281,39 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return { ok: true, message: "Settings reset to defaults." } satisfies DashboardResponse;
   }
 
+  if (intent === "sync-storefront") {
+    const result = await syncShopApiMetafield(
+      admin,
+      getBackendUrl().replace(/\/$/, ""),
+    );
+    if (!result.ok) {
+      return {
+        ok: false,
+        message: result.error || "Could not sync storefront configuration.",
+      } satisfies DashboardResponse;
+    }
+    return {
+      ok: true,
+      message: "Store configuration saved. Enable the app embed in your theme if you have not already.",
+    } satisfies DashboardResponse;
+  }
+
   return { ok: false, message: "Unknown action." } satisfies DashboardResponse;
 };
 
 export default function Index() {
-  const { shop, settings, stats, usage, activity, backendStatus, backendUrl, initialTab, isDevAdmin } =
-    useLoaderData<typeof loader>();
+  const {
+    shop,
+    settings,
+    stats,
+    usage,
+    activity,
+    backendStatus,
+    backendUrl,
+    initialTab,
+    isDevAdmin,
+    storefrontInstall,
+  } = useLoaderData<typeof loader>();
   const fetcher = useFetcher<typeof action>();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<TabName>(initialTab);
@@ -306,43 +356,23 @@ export default function Index() {
 
   const csvHref = `data:text/csv;charset=utf-8,${encodeURIComponent(csvData)}`;
 
-  const liquidSnippet = `{% if settings.tryon_enabled != false %}
-  <script>
-    window.TRYON_BACKEND_URL = {{ settings.tryon_api_url | default: shop.metafields.tryaura.api_url | json }};
-    window.TryOnConfig = {
-      apiUrl: window.TRYON_BACKEND_URL,
-      productId: {{ product.id | json }},
-    };
-  </script>
-  {{ 'tryon-widget.js' | asset_url | script_tag }}
-{% endif %}`;
-
-  const renderSnippet = `{% render 'tryon-button' %}`;
-
-  const schemaSnippet = `{
-  "name": "Virtual Try-On",
-  "settings": [
-    {
-      "type": "checkbox",
-      "id": "tryon_enabled",
-      "label": "Enable Virtual Try-On",
-      "default": true
-    },
-    {
-      "type": "text",
-      "id": "tryon_api_url",
-      "label": "Backend API URL",
-      "placeholder": "https://your-backend.com"
-    }
-  ]
-}`;
+  const [showAdvancedInstall, setShowAdvancedInstall] = useState(false);
 
   const tabTitleMap: Record<TabName, string> = {
     dashboard: "Dashboard",
     settings: "Settings",
-    install: "Installation Guide",
+    install: "Storefront Setup",
     logs: "Activity Logs",
   };
+
+  const syncStorefront = () => {
+    const form = new FormData();
+    form.set("intent", "sync-storefront");
+    fetcher.submit(form, { method: "post" });
+  };
+
+  const storefrontReady =
+    storefrontInstall.embedEnabled && storefrontInstall.apiUrlConfigured;
 
   const saveSettings = () => {
     const form = new FormData();
@@ -408,7 +438,7 @@ export default function Index() {
                 setActiveTab("install");
               }}
             >
-              <span className="icon">🔌</span> Installation
+              <span className="icon">🔌</span> Storefront
             </a>
             <a
               className={`nav-item ${activeTab === "logs" ? "active" : ""}`}
@@ -690,21 +720,93 @@ export default function Index() {
 
             {activeTab === "install" ? (
               <div id="tab-install">
-                <div className="alert alert-info">📌 Follow these steps to add the Virtual Try-On plugin to your Shopify theme.</div>
-                <div className="card">
-                  <div className="card-title" style={{ marginBottom: 16 }}>Step 1 — Upload the Plugin File</div>
-                  <p className="text-sm text-muted" style={{ marginBottom: 14 }}>
-                    In your Shopify admin, go to <strong>Online Store → Themes → Actions → Edit Code</strong>. Under <strong>Assets</strong>, upload the file <code style={{ fontFamily: "monospace" }}>tryon-widget.js</code>.
-                  </p>
-                  <p className="text-sm text-muted">You can download the latest plugin file here:</p>
-                  <div style={{ marginTop: 12 }}>
-                    <a href="/tryon-widget.js" download className="btn btn-primary">⬇ Download tryon-widget.js</a>
-                  </div>
+                {actionData ? (
+                  <div className={`alert ${actionData.ok ? "alert-success" : "alert-error"}`}>{actionData.message}</div>
+                ) : null}
+
+                <div className={`alert ${storefrontReady ? "alert-success" : "alert-info"}`}>
+                  {storefrontReady
+                    ? "✓ Virtual Try-On is active on your product pages."
+                    : "Enable the TryAura app embed on your theme — no code editing required."}
                 </div>
 
-                <CodeCard title="Step 2 — Add the Liquid Snippet" text="Create a new snippet called tryon-button.liquid and paste this code:" code={liquidSnippet} />
-                <CodeCard title="Step 3 — Render in Product Template" text="In your product template (e.g. sections/main-product.liquid), add this line just after your Add-to-Cart button block:" code={renderSnippet} />
-                <CodeCard title="Step 4 — Configure Theme Settings" text="Add these settings to your config/settings_schema.json:" code={schemaSnippet} />
+                <div className="card">
+                  <div className="card-header">
+                    <div>
+                      <div className="card-title">One-click setup</div>
+                      <div className="card-subtitle">
+                        We configure your API URL automatically. You only turn on the app embed in the theme editor.
+                      </div>
+                    </div>
+                    <span className={`badge ${storefrontReady ? "badge-green" : "badge-amber"}`}>
+                      <span className="dot"></span>
+                      {storefrontReady ? "Live" : "Action needed"}
+                    </span>
+                  </div>
+
+                  <div className="install-steps">
+                    <InstallStep
+                      done={storefrontInstall.apiUrlConfigured}
+                      title="App connected"
+                      detail={`Backend URL saved for your store (${backendUrl}).`}
+                    />
+                    <InstallStep
+                      done={storefrontInstall.embedEnabled}
+                      title="Theme embed enabled"
+                      detail="Turn on “Virtual Try-On” under Theme settings → App embeds, then save."
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}>
+                    <a
+                      href={storefrontInstall.themeEditorUrl}
+                      target="_top"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary"
+                    >
+                      {storefrontInstall.embedEnabled ? "Open theme editor" : "Enable on my theme →"}
+                    </a>
+                    <button type="button" className="btn btn-ghost" onClick={syncStorefront}>
+                      ↻ Re-sync configuration
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-muted" style={{ marginTop: 16, marginBottom: 0 }}>
+                    After clicking the button above, confirm <strong>Virtual Try-On</strong> is on in App embeds, then click <strong>Save</strong> in the theme editor. Works on Online Store 2.0 and vintage themes.
+                  </p>
+                </div>
+
+                <div className="card">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setShowAdvancedInstall((v) => !v)}
+                    style={{ marginBottom: showAdvancedInstall ? 16 : 0 }}
+                  >
+                    {showAdvancedInstall ? "Hide" : "Show"} manual theme install (developers)
+                  </button>
+                  {showAdvancedInstall ? (
+                    <>
+                      <p className="text-sm text-muted" style={{ marginBottom: 14 }}>
+                        Only if the app embed cannot be used. Run <code style={{ fontFamily: "monospace" }}>npm run deploy</code> first so the extension is on the store.
+                      </p>
+                      <a href="/tryon-widget.js" download className="btn btn-ghost btn-sm" style={{ marginBottom: 16 }}>
+                        ⬇ Download tryon-widget.js (legacy manual install)
+                      </a>
+                      <CodeCard
+                        title="Legacy snippet (tryon-button.liquid)"
+                        text="Manual theme editing — not needed when using the app embed above."
+                        code={`{% if settings.tryon_enabled != false %}
+  <script>
+    window.TRYON_BACKEND_URL = {{ shop.metafields.tryaura.api_url | json }};
+    window.TryOnConfig = { apiUrl: window.TRYON_BACKEND_URL, productId: {{ product.id | json }} };
+  </script>
+  {{ 'tryon-widget.js' | asset_url | script_tag }}
+{% endif %}`}
+                      />
+                    </>
+                  ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -727,6 +829,26 @@ export default function Index() {
             ) : null}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function InstallStep({
+  done,
+  title,
+  detail,
+}: {
+  done: boolean;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <div className="install-step">
+      <div className={`install-step-icon ${done ? "done" : "pending"}`}>{done ? "✓" : "○"}</div>
+      <div>
+        <div className="install-step-title">{title}</div>
+        <div className="text-sm text-muted">{detail}</div>
       </div>
     </div>
   );
@@ -876,6 +998,12 @@ input[type="color"] { padding: 4px; height: 40px; cursor: pointer; }
 .log-status.fail { background: var(--red); }
 .log-status.pending { background: var(--amber); }
 .log-meta { color: var(--text-3); font-size: 12px; font-family: 'DM Mono', monospace; }
+.install-steps { display: flex; flex-direction: column; gap: 16px; }
+.install-step { display: flex; gap: 14px; align-items: flex-start; }
+.install-step-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.install-step-icon.done { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.install-step-icon.pending { background: var(--amber-bg); color: var(--amber); border: 1px solid #fde68a; }
+.install-step-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .text-muted { color: var(--text-2); }
 .text-sm { font-size: 13px; }
 .mt-2 { margin-top: 8px; }

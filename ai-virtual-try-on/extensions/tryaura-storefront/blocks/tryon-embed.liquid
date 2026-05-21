@@ -1,0 +1,32 @@
+{% comment %}
+  TryAura Virtual Try-On — enable once in Theme editor → App embeds.
+  No theme code editing required.
+{% endcomment %}
+{% if product %}
+  <script>
+    window.TRYON_BACKEND_URL = {{ shop.metafields.tryaura.api_url | default: block.settings.api_url | json }};
+    window.TryOnConfig = {
+      apiUrl: window.TRYON_BACKEND_URL,
+      productId: {{ product.id | json }},
+    };
+  </script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Virtual Try-On",
+  "target": "body",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "javascript": "tryon-widget.js",
+  "settings": [
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "Backend API URL (optional)",
+      "info": "Leave blank to use settings from your TryAura app."
+    }
+  ]
+}
+{% endschema %}

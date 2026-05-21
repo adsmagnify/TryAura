@@ -1,0 +1,4 @@
+api_version = "2024-10"
+name = "TryAura Storefront"
+handle = "tryaura-storefront"
+type = "theme"
