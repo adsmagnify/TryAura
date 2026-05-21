@@ -1,6 +1,6 @@
 # Ping Render free-tier services every 5 minutes so they don't spin down (~15 min idle).
 # Enable: GitHub repo → Settings → Actions → General → Allow all actions.
-# First cold start can take ~30–60s; curl timeout is set to 90s.
+# Cold starts can take 30–60s; retries cover 404s during wake-up.
 
 name: Render keep-alive
 
@@ -16,14 +16,31 @@ env:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - name: Wake tryaura-api
         run: |
-          curl -fsS --max-time 90 "${TRYAURA_API_URL}/health"
-          echo " — tryaura-api OK"
+          for attempt in 1 2 3; do
+            if curl -fsS --max-time 90 "${TRYAURA_API_URL}/health"; then
+              echo " — tryaura-api OK"
+              exit 0
+            fi
+            echo "API attempt $attempt failed, retrying in 20s..."
+            sleep 20
+          done
+          exit 1
 
       - name: Wake tryaura-app
         run: |
-          curl -fsS --max-time 90 "${TRYAURA_APP_URL}/health"
-          echo " — tryaura-app OK"
+          for attempt in 1 2 3 4; do
+            for path in health health.json auth/login; do
+              if curl -fsS --max-time 90 "${TRYAURA_APP_URL}/${path}" -o /dev/null; then
+                echo "tryaura-app OK via /${path}"
+                exit 0
+              fi
+            done
+            echo "App attempt $attempt failed, retrying in 20s (cold start?)..."
+            sleep 20
+          done
+          echo "All app ping paths failed"
+          exit 1
