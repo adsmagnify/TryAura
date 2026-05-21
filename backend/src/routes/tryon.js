@@ -11,6 +11,7 @@ const { fetchProductImage } = require("../services/productImage");
 const jobStore = require("../services/jobStore");
 const shopSettings = require("../services/shopSettings");
 const { validateUserPhoto, checkFilename, logGuardrailEvent } = require("../services/guardrails");
+const { prepareImageUrlForAi } = require("../services/imageUrls");
 const { requireShop } = require("../middleware/requireShop");
 
 const router = express.Router();
@@ -149,6 +150,16 @@ router.post("/", limiter, upload.fields([
       return res.status(400).json({
         success: false,
         error: "Garment image required (productId, garmentImage URL, or file upload)",
+      });
+    }
+
+    try {
+      personImageUrl = await prepareImageUrlForAi(personImageUrl, { label: "person", prefix: "uploads" });
+      garmentImageUrl = await prepareImageUrlForAi(garmentImageUrl, { label: "garment", prefix: "garments" });
+    } catch (urlErr) {
+      return res.status(400).json({
+        success: false,
+        error: urlErr.message || "Invalid image URL for try-on",
       });
     }
 

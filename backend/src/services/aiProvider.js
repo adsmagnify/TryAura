@@ -1,4 +1,5 @@
 const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
+const { normalizePublicImageUrl } = require("./imageUrls");
 
 const BASE = "https://api.nanobananaapi.ai/api/v1/nanobanana";
 
@@ -33,6 +34,9 @@ const TRYON_PROMPT =
 
 async function submitTryOn(personImageUrl, garmentImageUrl) {
   const f = await fetch;
+  const personUrl = normalizePublicImageUrl(personImageUrl, "person");
+  const garmentUrl = normalizePublicImageUrl(garmentImageUrl, "garment");
+
   try {
     const res = await f(`${BASE}/generate-pro`, {
       method: "POST",
@@ -42,7 +46,7 @@ async function submitTryOn(personImageUrl, garmentImageUrl) {
       },
       body: JSON.stringify({
         prompt: TRYON_PROMPT,
-        imageUrls: [personImageUrl, garmentImageUrl],
+        imageUrls: [personUrl, garmentUrl],
         resolution: "1K",
         aspectRatio: "2:3",
       }),

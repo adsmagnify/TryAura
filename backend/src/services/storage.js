@@ -64,7 +64,9 @@ async function uploadToLocal(buffer, ext = "jpg") {
     }
   }, ttl);
 
-  return `${process.env.BACKEND_URL || "http://localhost:3001"}/temp/${filename}`;
+  const { env } = require("../config/env");
+  const base = env.backendUrl || "http://localhost:3001";
+  return `${base}/temp/${filename}`;
 }
 
 // ── Delete local temp file ──────────────────────────────────────

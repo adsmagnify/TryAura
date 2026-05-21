@@ -11,12 +11,18 @@
   endif
 %}
 {% if product %}
+  {% if product.featured_image %}
+    {% assign garment_img = product.featured_image | image_url: width: 1200 %}
+    {% unless garment_img contains 'https://' or garment_img contains 'http://' %}
+      {% assign garment_img = garment_img | prepend: 'https:' %}
+    {% endunless %}
+  {% endif %}
   <script>
     window.TRYON_BACKEND_URL = {{ tryon_api | json }};
     window.TryOnConfig = {
       apiUrl: window.TRYON_BACKEND_URL,
       productId: {{ product.id | json }},
-      garmentImageUrl: {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json }}{% else %}null{% endif %},
+      garmentImageUrl: {% if product.featured_image %}{{ garment_img | json }}{% else %}null{% endif %},
       shop: {{ shop.permanent_domain | json }},
     };
   </script>

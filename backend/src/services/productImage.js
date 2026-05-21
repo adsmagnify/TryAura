@@ -2,6 +2,7 @@ const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...ar
 const sessionStore = require("./sessionStore");
 const { shopify } = require("../shopify/client");
 const { logger } = require("../lib/logger");
+const { normalizePublicImageUrl } = require("./imageUrls");
 
 function formatGraphqlErrors(errors) {
   if (errors == null) return "Unknown Shopify API error";
@@ -82,7 +83,7 @@ async function fetchProductImageRest(numericId, shop, accessToken, apiVersion) {
     product.media?.[0]?.preview_image?.src;
 
   if (!imageUrl) throw new Error("Product has no images");
-  return imageUrl;
+  return normalizePublicImageUrl(imageUrl, "garment");
 }
 
 async function fetchProductImageGraphql(gid, shop, accessToken, apiVersion) {
@@ -142,7 +143,7 @@ async function fetchProductImageGraphql(gid, shop, accessToken, apiVersion) {
     product.media?.nodes?.[0]?.preview?.image?.url;
 
   if (!imageUrl) throw new Error("Product has no images");
-  return imageUrl;
+  return normalizePublicImageUrl(imageUrl, "garment");
 }
 
 async function fetchProductImage(productId, shop) {
