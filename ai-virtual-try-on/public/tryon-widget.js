@@ -76,25 +76,36 @@
     return true;
   }
 
+  function normalizeProductId(id) {
+    if (id == null || id === "") return null;
+    var raw = String(id).trim();
+    var gidMatch = raw.match(/^gid:\/\/shopify\/Product\/(\d+)$/i);
+    if (gidMatch) return gidMatch[1];
+    if (/^\d+$/.test(raw)) return raw;
+    return null;
+  }
+
   function detectProductFromPage() {
     if (window.TryOnConfig && window.TryOnConfig.productId) {
-      productId = String(window.TryOnConfig.productId);
+      productId = normalizeProductId(window.TryOnConfig.productId);
       return;
     }
     if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product) {
-      productId = String(
-        window.ShopifyAnalytics.meta.product.id || window.ShopifyAnalytics.meta.product.gid || productId
-      );
+      productId =
+        normalizeProductId(window.ShopifyAnalytics.meta.product.id) ||
+        normalizeProductId(window.ShopifyAnalytics.meta.product.gid) ||
+        productId;
     }
     if (window.Shopify && window.Shopify.theme && window.Shopify.theme.product) {
-      productId = String(window.Shopify.theme.product.id);
+      productId = normalizeProductId(window.Shopify.theme.product.id) || productId;
     }
 
     document.querySelectorAll('script[type="application/ld+json"]').forEach(function (script) {
       try {
         const data = JSON.parse(script.textContent);
         if (data["@type"] === "Product") {
-          productId = String(data.productID || data.sku || productId);
+          var fromLd = normalizeProductId(data.productID || data["@id"]);
+          if (fromLd) productId = fromLd;
         }
       } catch (e) { /* ignore */ }
     });
@@ -103,12 +114,12 @@
       document.querySelector('meta[property="og:product_id"]') ||
       document.querySelector('meta[name="product-id"]') ||
       document.querySelector('meta[property="product:id"]');
-    if (meta && !productId) productId = meta.getAttribute("content");
+    if (meta && !productId) productId = normalizeProductId(meta.getAttribute("content"));
 
     const productForm = document.querySelector('form[action*="/cart/add"]');
     if (productForm && !productId) {
       const pid = productForm.getAttribute("data-product-id");
-      if (pid) productId = String(pid);
+      if (pid) productId = normalizeProductId(pid);
     }
   }
 
@@ -246,9 +257,26 @@
       if (file.size > CONFIG.MAX_FILE_SIZE_MB * 1024 * 1024) {
         return showError("Image must be under " + CONFIG.MAX_FILE_SIZE_MB + "MB");
       }
-      selectedFile = file;
-      generateBtn.style.display = "block";
-      hideError();
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        if (img.width < 300 || img.height < 400) {
+          showError("Photo is too small. Use a clearer full-body photo (at least 300×400px).");
+          imageInput.value = "";
+          selectedFile = null;
+          generateBtn.style.display = "none";
+          return;
+        }
+        selectedFile = file;
+        generateBtn.style.display = "block";
+        hideError();
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        showError("Could not read this image. Try another photo.");
+      };
+      img.src = url;
     });
 
     generateBtn.addEventListener("click", function () {
@@ -262,7 +290,10 @@
       const customerId = window.ShopifyAnalytics?.meta?.page?.customerId || null;
       const formData = new FormData();
       formData.append("personImage", selectedFile);
-      formData.append("productId", productId);
+      if (productId) formData.append("productId", productId);
+      if (window.TryOnConfig && window.TryOnConfig.garmentImageUrl) {
+        formData.append("garmentImageUrl", window.TryOnConfig.garmentImageUrl);
+      }
       formData.append("shop", shop);
       formData.append("sessionId", sessionId);
       if (customerId) formData.append("customerId", String(customerId));

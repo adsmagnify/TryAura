@@ -108,7 +108,10 @@ router.post("/", limiter, upload.fields([
 
       const guardrailCheck = await validateUserPhoto(personImageFile.buffer, personImageFile.mimetype);
       if (!guardrailCheck.valid) {
-        logGuardrailEvent("USER_PHOTO_REJECTED", { issues: guardrailCheck.issues });
+        logGuardrailEvent("USER_PHOTO_REJECTED", {
+          issues: guardrailCheck.issues,
+          dimensions: guardrailCheck.metadata,
+        });
         return res.status(400).json({
           success: false,
           error: "Photo requirements not met: " + guardrailCheck.issues.join("; "),

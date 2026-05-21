@@ -16,6 +16,7 @@
     window.TryOnConfig = {
       apiUrl: window.TRYON_BACKEND_URL,
       productId: {{ product.id | json }},
+      garmentImageUrl: {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json }}{% else %}null{% endif %},
       shop: {{ shop.permanent_domain | json }},
     };
   </script>
