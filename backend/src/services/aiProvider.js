@@ -1,6 +1,6 @@
 const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
 
-const BASE = "https://api.nanobananaai.ai/api/v1/nanobanana";
+const BASE = "https://api.nanobananaapi.ai/api/v1/nanobanana";
 
 async function pollForResult(taskId, maxWaitMs = 120000) {
   const f = await fetch;
