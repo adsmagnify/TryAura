@@ -1,5 +1,6 @@
 {% comment %}
   TryAura Virtual Try-On — Theme settings → App embeds → Virtual Try-On → Save
+  Loads on all templates (product, home, collection, custom pages) when enabled.
 {% endcomment %}
 {% liquid
   assign tryon_api = block.settings.api_url
@@ -9,32 +10,34 @@
   if tryon_api == blank
     assign tryon_api = 'https://tryaura-api.onrender.com'
   endif
+
+  assign tryon_product_id = null
+  assign garment_img = null
+  if product
+    assign tryon_product_id = product.id
+    if product.featured_image
+      assign garment_img = product.featured_image | image_url: width: 1200
+      unless garment_img contains 'https://' or garment_img contains 'http://'
+        assign garment_img = garment_img | prepend: 'https:'
+      endunless
+    endif
+  endif
 %}
-{% if product %}
-  {% if product.featured_image %}
-    {% assign garment_img = product.featured_image | image_url: width: 1200 %}
-    {% unless garment_img contains 'https://' or garment_img contains 'http://' %}
-      {% assign garment_img = garment_img | prepend: 'https:' %}
-    {% endunless %}
-  {% endif %}
-  <script>
-    window.TRYON_BACKEND_URL = {{ tryon_api | json }};
-    window.TryOnConfig = {
-      apiUrl: window.TRYON_BACKEND_URL,
-      productId: {{ product.id | json }},
-      garmentImageUrl: {% if product.featured_image %}{{ garment_img | json }}{% else %}null{% endif %},
-      shop: {{ shop.permanent_domain | json }},
-    };
-  </script>
-{% endif %}
+<script>
+  window.TRYON_BACKEND_URL = {{ tryon_api | json }};
+  window.TryOnConfig = {
+    apiUrl: window.TRYON_BACKEND_URL,
+    shop: {{ shop.permanent_domain | json }},
+    productId: {% if tryon_product_id %}{{ tryon_product_id | json }}{% else %}null{% endif %},
+    garmentImageUrl: {% if garment_img %}{{ garment_img | json }}{% else %}null{% endif %},
+    template: {{ template.name | json }}
+  };
+</script>
 
 {% schema %}
 {
   "name": "Virtual Try-On",
   "target": "body",
-  "enabled_on": {
-    "templates": ["product"]
-  },
   "javascript": "tryon-widget.js",
   "settings": [
     {

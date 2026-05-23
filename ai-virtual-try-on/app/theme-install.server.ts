@@ -67,7 +67,6 @@ export function buildThemeEditorActivateUrl(shop: string): string {
   const apiKey = process.env.SHOPIFY_API_KEY || "";
   const params = new URLSearchParams({
     context: "apps",
-    template: "product",
     activateAppId: `${apiKey}/${TRYON_EMBED_BLOCK_HANDLE}`,
   });
   return `https://${shop}/admin/themes/current/editor?${params.toString()}`;

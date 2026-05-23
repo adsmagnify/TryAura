@@ -1,0 +1,1038 @@
+{% comment %}
+  Paste these Google Fonts <link> tags into layout/theme.liquid inside <head>:
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&family=Hanken+Grotesk:wght@300..700&display=swap" rel="stylesheet">
+{% endcomment %}
+
+<div
+  class="tryauraa-landing"
+  id="tryauraa-{{ section.id }}"
+  data-tryauraa-section="{{ section.id }}"
+  data-tryon-dress-1="{% if section.settings.tryon_dress_1 != blank %}{{ section.settings.tryon_dress_1 | image_url: width: 800 }}{% endif %}"
+  data-tryon-dress-2="{% if section.settings.tryon_dress_2 != blank %}{{ section.settings.tryon_dress_2 | image_url: width: 800 }}{% endif %}"
+  data-tryon-tee-white="{% if section.settings.tryon_tee_white != blank %}{{ section.settings.tryon_tee_white | image_url: width: 800 }}{% endif %}"
+  data-tryon-tee-black="{% if section.settings.tryon_tee_black != blank %}{{ section.settings.tryon_tee_black | image_url: width: 800 }}{% endif %}"
+  data-tryon-tee-sand="{% if section.settings.tryon_tee_sand != blank %}{{ section.settings.tryon_tee_sand | image_url: width: 800 }}{% endif %}"
+>
+  <nav class="tryauraa-nav">
+    <div class="tryauraa-wrap tryauraa-nav-in">
+      <a class="tryauraa-wm" href="#tryauraa-hero-{{ section.id }}"><span class="tryauraa-wm-a">try</span><span class="tryauraa-wm-b">auraa</span></a>
+      <div class="tryauraa-nav-links">
+        <a href="#tryauraa-how-{{ section.id }}">How it works</a>
+        <a href="#tryauraa-features-{{ section.id }}">Features</a>
+        <a href="#tryauraa-pricing-{{ section.id }}">Pricing</a>
+        <a href="#tryauraa-faq-{{ section.id }}">FAQ</a>
+      </div>
+      <div class="tryauraa-nav-cta">
+        <a href="{% if section.settings.secondary_cta_url != blank %}{{ section.settings.secondary_cta_url }}{% else %}#tryauraa-demo-{{ section.id }}{% endif %}" class="tryauraa-btn tryauraa-btn-ghost">{{ section.settings.secondary_cta_label }}</a>
+        <a href="{{ section.settings.install_url }}" class="tryauraa-btn tryauraa-btn-gold">Add to Shopify</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="tryauraa-hero" id="tryauraa-hero-{{ section.id }}">
+    <div class="tryauraa-wrap tryauraa-hero-grid">
+      <div>
+        <div class="tryauraa-badge"><span class="tryauraa-dot"></span> {{ section.settings.hero_badge }}</div>
+        <h1 class="tryauraa-hero-title">{{ section.settings.hero_heading }}</h1>
+        <p class="tryauraa-sub">{{ section.settings.hero_subline }}</p>
+        <div class="tryauraa-hero-cta">
+          <a href="{% if section.settings.primary_cta_url != blank %}{{ section.settings.primary_cta_url }}{% else %}{{ section.settings.install_url }}{% endif %}" class="tryauraa-btn tryauraa-btn-gold">{{ section.settings.primary_cta_label }}</a>
+          <a href="{% if section.settings.secondary_cta_url != blank %}{{ section.settings.secondary_cta_url }}{% else %}#tryauraa-demo-{{ section.id }}{% endif %}" class="tryauraa-btn tryauraa-btn-ghost">{{ section.settings.secondary_cta_label }}</a>
+        </div>
+        <div class="tryauraa-hero-mini">
+          <span>✓ Live in minutes</span>
+          <span>✓ Works with any theme</span>
+          <span>✓ 7-day free trial</span>
+        </div>
+      </div>
+
+      <div class="tryauraa-demo" id="tryauraa-demo-{{ section.id }}">
+        <div class="tryauraa-demo-head">
+          <span class="tryauraa-demo-tag">Live try-on</span>
+          <span class="tryauraa-demo-status"><span class="tryauraa-live"></span> Tap an item</span>
+        </div>
+        <div class="tryauraa-stage-wrap" id="tryauraa-stage-{{ section.id }}">
+          <div class="tryauraa-gen-label"><span class="tryauraa-spin"></span> Generating your look</div>
+          <div class="tryauraa-shimmer"></div>
+          <div class="tryauraa-stage-photo" id="tryauraa-photo-wrap-{{ section.id }}" hidden>
+            <img
+              id="tryauraa-photo-{{ section.id }}"
+              class="tryauraa-stage-photo-img"
+              src=""
+              alt="Virtual try-on preview"
+              width="800"
+              height="800"
+              loading="lazy"
+            >
+          </div>
+          <svg class="tryauraa-stage-svg" id="tryauraa-stage-svg-{{ section.id }}" viewBox="0 0 280 470" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <ellipse cx="140" cy="452" rx="86" ry="15" fill="#2E2419" opacity="0.08"/>
+            <rect x="135" y="300" width="10" height="150" rx="4" fill="#B59A5A"/>
+            <ellipse cx="140" cy="448" rx="58" ry="11" fill="#C2A14E"/>
+            <ellipse cx="140" cy="445" rx="58" ry="11" fill="#D8BE7E"/>
+
+            <g id="tryauraa-form-fem-{{ section.id }}">
+              <path d="M126 64 L154 64 C160 76 158 90 165 104 C184 116 197 140 195 164 C193 200 173 222 171 244 C170 274 191 296 189 318 C188 344 175 366 156 376 L124 376 C105 366 92 344 91 318 C89 296 110 274 109 244 C107 222 87 200 85 164 C83 140 96 116 115 104 C122 90 120 76 126 64 Z" fill="#E4D2B4" stroke="#CBB68F" stroke-width="1.5"/>
+              <ellipse cx="140" cy="62" rx="16" ry="6" fill="#D8C3A0"/>
+            </g>
+
+            <g id="tryauraa-form-male-{{ section.id }}" style="display:none">
+              <path d="M122 66 L158 66 C164 78 162 92 174 100 C198 106 214 120 212 142 C210 200 204 280 198 348 C197 362 188 372 176 374 L104 374 C92 372 83 362 82 348 C76 280 70 200 68 142 C66 120 82 106 106 100 C118 92 116 78 122 66 Z" fill="#E0CBA8" stroke="#C7B086" stroke-width="1.5"/>
+              <ellipse cx="140" cy="64" rx="17" ry="6" fill="#D3BD96"/>
+            </g>
+
+            <g class="tryauraa-garment tryauraa-on" id="tryauraa-g-dress-{{ section.id }}">
+              <path d="M118 96 C112 130 92 168 96 210 C82 280 74 360 90 416 C120 426 160 426 190 416 C206 360 198 280 184 210 C188 168 168 130 162 96 C154 92 148 102 140 102 C132 102 126 92 118 96 Z" fill="#C2A14E"/>
+              <path d="M122 98 L130 90 M158 98 L150 90" stroke="#C2A14E" stroke-width="6" stroke-linecap="round"/>
+              <path d="M118 96 C112 130 92 168 96 210 C160 224 188 168 162 96 C154 92 148 102 140 102 C132 102 126 92 118 96 Z" fill="#CBAE5E" opacity="0.5"/>
+            </g>
+
+            <g class="tryauraa-garment" id="tryauraa-g-wrap-{{ section.id }}">
+              <path d="M116 100 C110 130 94 165 98 205 C86 270 80 350 92 404 C120 414 160 414 188 404 C200 350 194 270 182 205 C186 165 170 130 164 100 C156 96 150 134 140 152 C130 134 124 96 116 100 Z" fill="#B58E40"/>
+              <path d="M122 108 L150 175 M158 108 L130 175" stroke="#9C7732" stroke-width="3" fill="none"/>
+              <rect x="94" y="206" width="92" height="12" rx="3" fill="#8A6526"/>
+            </g>
+
+            <g class="tryauraa-garment" id="tryauraa-g-tee-{{ section.id }}">
+              <path id="tryauraa-tee-body-{{ section.id }}" d="M102 98 C82 102 62 114 54 140 C60 150 66 162 72 170 C82 162 90 152 100 150 C92 210 90 270 94 312 C122 320 160 320 188 312 C192 270 190 210 182 150 C192 152 200 162 210 170 C216 162 222 150 228 140 C220 114 200 102 180 98 C168 102 160 112 140 112 C120 112 112 102 102 98 Z" fill="#FFFFFF"/>
+              <path d="M118 102 C128 118 152 118 162 102" stroke="rgba(0,0,0,.16)" stroke-width="3" fill="none"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="tryauraa-cat-label">Womenswear</div>
+        <div class="tryauraa-rack">
+          <button type="button" class="tryauraa-item tryauraa-active" data-type="dress" data-garment="tryauraa-g-dress-{{ section.id }}" data-tryon-key="dress_1">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 6l6-3 6 3-3 9 4 22H13l4-22z" fill="#C2A14E"/></svg>
+            <span>Slip Dress</span>
+          </button>
+          <button type="button" class="tryauraa-item" data-type="dress" data-garment="tryauraa-g-wrap-{{ section.id }}" data-tryon-key="dress_2">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 6l6 8 6-8 3 8-3 21H14l-3-21z" fill="#B58E40"/></svg>
+            <span>Wrap Dress</span>
+          </button>
+        </div>
+
+        <div class="tryauraa-cat-label">Menswear t-shirts</div>
+        <div class="tryauraa-rack tryauraa-three">
+          <button type="button" class="tryauraa-item" data-type="tee" data-color="#FFFFFF" data-tryon-key="tee_white">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 7l-8 5 3 5 5-3v18h12V14l5 3 3-5-8-5c-2 3-4 4-6 4s-4-1-6-4z" fill="#FFFFFF" stroke="#D8C8A6"/></svg>
+            <span>White Tee</span>
+          </button>
+          <button type="button" class="tryauraa-item" data-type="tee" data-color="#2E2419" data-tryon-key="tee_black">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 7l-8 5 3 5 5-3v18h12V14l5 3 3-5-8-5c-2 3-4 4-6 4s-4-1-6-4z" fill="#2E2419"/></svg>
+            <span>Black Tee</span>
+          </button>
+          <button type="button" class="tryauraa-item" data-type="tee" data-color="#A6906F" data-tryon-key="tee_sand">
+            <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M14 7l-8 5 3 5 5-3v18h12V14l5 3 3-5-8-5c-2 3-4 4-6 4s-4-1-6-4z" fill="#A6906F"/></svg>
+            <span>Sand Tee</span>
+          </button>
+        </div>
+        <p class="tryauraa-demo-foot">Same experience your shoppers get on every product page, for men and women.</p>
+      </div>
+    </div>
+  </header>
+
+  <div class="tryauraa-logos">
+    <div class="tryauraa-wrap">
+      <p>Made for premium Shopify fashion stores</p>
+      <div class="tryauraa-logo-row">
+        {% for block in section.blocks %}
+          {% if block.type == 'brand' %}
+            <span {{ block.shopify_attributes }}>{{ block.settings.name }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tryauraa-stats tryauraa-reveal">
+    <div class="tryauraa-wrap tryauraa-stats-grid">
+      <div class="tryauraa-stat">
+        <div class="tryauraa-n">{{ section.settings.stat_1_number }}</div>
+        <div class="tryauraa-l">{{ section.settings.stat_1_label }}</div>
+      </div>
+      <div class="tryauraa-stat">
+        <div class="tryauraa-n">{{ section.settings.stat_2_number }}</div>
+        <div class="tryauraa-l">{{ section.settings.stat_2_label }}</div>
+      </div>
+      <div class="tryauraa-stat">
+        <div class="tryauraa-n">{{ section.settings.stat_3_number }}</div>
+        <div class="tryauraa-l">{{ section.settings.stat_3_label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <section class="tryauraa-section" id="tryauraa-features-{{ section.id }}">
+    <div class="tryauraa-wrap">
+      <div class="tryauraa-center tryauraa-reveal">
+        <div class="tryauraa-s-label">Why Tryauraa</div>
+        <h2 class="tryauraa-s-title">Everything a fashion store needs<br>to sell with confidence</h2>
+      </div>
+
+      <div class="tryauraa-feat tryauraa-reveal">
+        <div>
+          <div class="tryauraa-kick">{{ section.settings.feature_1_kicker }}</div>
+          <h3>{{ section.settings.feature_1_title }}</h3>
+          <p>{{ section.settings.feature_1_body }}</p>
+        </div>
+        <div class="tryauraa-feat-visual tryauraa-fv-1">
+          <svg width="150" height="180" viewBox="0 0 150 180" aria-hidden="true"><ellipse cx="75" cy="168" rx="46" ry="8" fill="#2E2419" opacity=".08"/><path d="M55 30c-4 20-14 40-12 64-6 40-4 60 4 78 18 6 38 6 56 0 8-18 10-38 4-78 2-24-8-44-12-64-6-4-12 6-20 6s-14-10-20-6z" fill="#C2A14E"/><circle cx="75" cy="20" r="14" fill="#E4D2B4"/></svg>
+        </div>
+      </div>
+
+      <div class="tryauraa-feat tryauraa-reveal">
+        <div>
+          <div class="tryauraa-kick">{{ section.settings.feature_2_kicker }}</div>
+          <h3>{{ section.settings.feature_2_title }}</h3>
+          <p>{{ section.settings.feature_2_body }}</p>
+        </div>
+        <div class="tryauraa-feat-visual tryauraa-fv-2">
+          <svg width="180" height="150" viewBox="0 0 180 150" aria-hidden="true"><rect x="20" y="24" width="140" height="100" rx="10" fill="#FAF4E9" opacity=".95"/><rect x="20" y="24" width="140" height="22" rx="10" fill="#C2A14E"/><circle cx="33" cy="35" r="3" fill="#FAF4E9"/><circle cx="44" cy="35" r="3" fill="#FAF4E9"/><rect x="34" y="60" width="50" height="48" rx="6" fill="#E7D9C0"/><rect x="96" y="60" width="48" height="9" rx="4" fill="#A6906F"/><rect x="96" y="78" width="40" height="9" rx="4" fill="#D8C8A6"/><rect x="96" y="96" width="44" height="12" rx="6" fill="#C2A14E"/></svg>
+        </div>
+      </div>
+
+      <div class="tryauraa-feat tryauraa-reveal">
+        <div>
+          <div class="tryauraa-kick">{{ section.settings.feature_3_kicker }}</div>
+          <h3>{{ section.settings.feature_3_title }}</h3>
+          <p>{{ section.settings.feature_3_body }}</p>
+        </div>
+        <div class="tryauraa-feat-visual tryauraa-fv-3">
+          <svg width="190" height="150" viewBox="0 0 190 150" aria-hidden="true"><polyline points="20,120 55,95 90,105 125,60 165,35" fill="none" stroke="#C2A14E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="165" cy="35" r="7" fill="#A07D32"/><line x1="20" y1="130" x2="175" y2="130" stroke="#A6906F" stroke-width="2"/><rect x="36" y="115" width="14" height="15" fill="#E4D2B4"/><rect x="76" y="108" width="14" height="22" fill="#D8C8A6"/><rect x="116" y="92" width="14" height="38" fill="#C9B488"/></svg>
+        </div>
+      </div>
+
+      <div class="tryauraa-feat tryauraa-reveal">
+        <div>
+          <div class="tryauraa-kick">{{ section.settings.feature_4_kicker }}</div>
+          <h3>{{ section.settings.feature_4_title }}</h3>
+          <p>{{ section.settings.feature_4_body }}</p>
+        </div>
+        <div class="tryauraa-feat-visual tryauraa-fv-4">
+          <svg width="170" height="150" viewBox="0 0 170 150" aria-hidden="true"><rect x="30" y="20" width="48" height="100" rx="8" fill="#FAF4E9"/><rect x="86" y="36" width="48" height="84" rx="8" fill="#FAF4E9" opacity=".85"/><circle cx="54" cy="48" r="13" fill="#E4D2B4"/><rect x="40" y="70" width="28" height="40" rx="6" fill="#2E2419"/><path d="M150 30l4 9 9 1-6 7 2 9-9-5-9 5 2-9-6-7 9-1z" fill="#FAF4E9"/></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tryauraa-how tryauraa-section" id="tryauraa-how-{{ section.id }}">
+    <div class="tryauraa-wrap">
+      <div class="tryauraa-center tryauraa-reveal">
+        <div class="tryauraa-s-label">How it works</div>
+        <h2 class="tryauraa-s-title">From browsing to buying in three steps</h2>
+      </div>
+      <div class="tryauraa-steps">
+        <div class="tryauraa-step tryauraa-reveal"><div class="tryauraa-num">01</div><h4>Shopper picks a photo</h4><p>They upload a quick photo or choose a model on the product page. One tap, no account needed.</p></div>
+        <div class="tryauraa-step tryauraa-reveal"><div class="tryauraa-num">02</div><h4>Tryauraa generates the look</h4><p>Our AI places your product on them in seconds, with natural fit and matched lighting.</p></div>
+        <div class="tryauraa-step tryauraa-reveal"><div class="tryauraa-num">03</div><h4>They buy with confidence</h4><p>Seeing the fit removes the guesswork, so more carts convert and fewer items come back.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tryauraa-section tryauraa-reveal">
+    <div class="tryauraa-wrap tryauraa-quote">
+      <blockquote>{{ section.settings.testimonial_quote }}</blockquote>
+      <div class="tryauraa-who">{{ section.settings.testimonial_author }}<span>{{ section.settings.testimonial_author_role }}</span></div>
+    </div>
+  </section>
+
+  <section class="tryauraa-section" id="tryauraa-pricing-{{ section.id }}">
+    <div class="tryauraa-wrap">
+      <div class="tryauraa-center tryauraa-reveal">
+        <div class="tryauraa-s-label">Pricing</div>
+        <h2 class="tryauraa-s-title">Plans that scale with your store</h2>
+        <p class="tryauraa-s-intro">Every plan starts with a 7-day free trial. Cancel anytime from your Shopify admin.</p>
+      </div>
+      <div class="tryauraa-price-grid">
+        <div class="tryauraa-plan tryauraa-reveal">
+          <h4>{{ section.settings.tier_1_name }}</h4>
+          <div class="tryauraa-pr">{{ section.settings.tier_1_price }}<small>/mo</small></div>
+          <div class="tryauraa-trial">7-day free trial</div>
+          <ul>
+            {% assign tier_1_lines = section.settings.tier_1_features | newline_to_br | split: '<br />' %}
+            {% for line in tier_1_lines %}
+              {% if line != blank %}<li>{{ line | strip }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+          <a href="{{ section.settings.tier_1_button_url }}" class="tryauraa-btn tryauraa-btn-ghost">{{ section.settings.tier_1_button_label }}</a>
+        </div>
+
+        <div class="tryauraa-plan tryauraa-feature tryauraa-reveal">
+          {% if section.settings.tier_2_featured %}<span class="tryauraa-tag">Most popular</span>{% endif %}
+          <h4>{{ section.settings.tier_2_name }}</h4>
+          <div class="tryauraa-pr">{{ section.settings.tier_2_price }}<small>/mo</small></div>
+          <div class="tryauraa-trial">7-day free trial</div>
+          <ul>
+            {% assign tier_2_lines = section.settings.tier_2_features | newline_to_br | split: '<br />' %}
+            {% for line in tier_2_lines %}
+              {% if line != blank %}<li>{{ line | strip }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+          <a href="{{ section.settings.tier_2_button_url }}" class="tryauraa-btn tryauraa-btn-gold">{{ section.settings.tier_2_button_label }}</a>
+        </div>
+
+        <div class="tryauraa-plan tryauraa-reveal">
+          <h4>{{ section.settings.tier_3_name }}</h4>
+          <div class="tryauraa-pr">{{ section.settings.tier_3_price }}<small>/mo</small></div>
+          <div class="tryauraa-trial">7-day free trial</div>
+          <ul>
+            {% assign tier_3_lines = section.settings.tier_3_features | newline_to_br | split: '<br />' %}
+            {% for line in tier_3_lines %}
+              {% if line != blank %}<li>{{ line | strip }}</li>{% endif %}
+            {% endfor %}
+          </ul>
+          <a href="{{ section.settings.tier_3_button_url }}" class="tryauraa-btn tryauraa-btn-ghost">{{ section.settings.tier_3_button_label }}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tryauraa-section" id="tryauraa-faq-{{ section.id }}">
+    <div class="tryauraa-wrap">
+      <div class="tryauraa-center tryauraa-reveal">
+        <div class="tryauraa-s-label">FAQ</div>
+        <h2 class="tryauraa-s-title">Good questions, answered</h2>
+      </div>
+      <div class="tryauraa-faq tryauraa-reveal">
+        <div class="tryauraa-q"><button type="button">How does installation work?<span class="tryauraa-ic">+</span></button><div class="tryauraa-ans"><p>Install Tryauraa from the Shopify App Store, choose the products you want to enable, and publish. The try-on button appears on those product pages right away.</p></div></div>
+        <div class="tryauraa-q"><button type="button">Do I need a developer or code?<span class="tryauraa-ic">+</span></button><div class="tryauraa-ans"><p>No. Tryauraa works with any Shopify theme and adds itself to your product pages with no theme edits or code changes.</p></div></div>
+        <div class="tryauraa-q"><button type="button">Does it work for menswear and womenswear?<span class="tryauraa-ic">+</span></button><div class="tryauraa-ans"><p>Yes. Tryauraa handles dresses, t-shirts, outerwear, and more, for both men's and women's collections.</p></div></div>
+        <div class="tryauraa-q"><button type="button">Will it match my store's look?<span class="tryauraa-ic">+</span></button><div class="tryauraa-ans"><p>Yes. The try-on experience inherits your fonts and colors, and you can customize the button, copy, and layout to fit your brand.</p></div></div>
+        <div class="tryauraa-q"><button type="button">Is shopper data kept private?<span class="tryauraa-ic">+</span></button><div class="tryauraa-ans"><p>Yes. Uploaded photos are used only to generate the try-on and are handled in line with our privacy policy. Shoppers stay in control of their images.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tryauraa-cta-band tryauraa-reveal" id="tryauraa-install-{{ section.id }}">
+    <h2>Give every shopper a <em>fitting room</em>.</h2>
+    <p>Add Tryauraa to your Shopify store and let your products sell themselves on.</p>
+    <a href="{{ section.settings.install_url }}" class="tryauraa-btn tryauraa-btn-gold">Add to Shopify</a>
+  </div>
+
+  <footer class="tryauraa-footer">
+    <div class="tryauraa-wrap">
+      <div class="tryauraa-foot-grid">
+        <div>
+          <div class="tryauraa-foot-wm">try<span class="tryauraa-wm-b">auraa</span></div>
+          <div class="tryauraa-foot-tag">{{ section.settings.footer_tagline }}</div>
+        </div>
+        <div class="tryauraa-foot-links">
+          <div class="tryauraa-foot-col">
+            <h5>Product</h5>
+            {% for block in section.blocks %}
+              {% if block.type == 'link' and block.settings.column == 'product' %}
+                <a href="{{ block.settings.url }}" {{ block.shopify_attributes }}>{{ block.settings.label }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div class="tryauraa-foot-col">
+            <h5>Company</h5>
+            {% for block in section.blocks %}
+              {% if block.type == 'link' and block.settings.column == 'company' %}
+                <a href="{{ block.settings.url }}" {{ block.shopify_attributes }}>{{ block.settings.label }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <div class="tryauraa-foot-col">
+            <h5>Legal</h5>
+            {% for block in section.blocks %}
+              {% if block.type == 'link' and block.settings.column == 'legal' %}
+                <a href="{{ block.settings.url }}" {{ block.shopify_attributes }}>{{ block.settings.label }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="tryauraa-foot-bot">
+        <span>© {{ 'now' | date: '%Y' }} Tryauraa. All rights reserved.</span>
+        <span>tryauraa.com</span>
+      </div>
+    </div>
+  </footer>
+</div>
+
+{% stylesheet %}
+.tryauraa-landing{
+  scroll-behavior:smooth;
+  --gold:#C2A14E; --bronze:#A07D32; --taupe:#A6906F;
+  --sand:#E7D9C0; --ivory:#FAF4E9; --warm-white:#FFFDF8;
+  --espresso:#2E2419; --coffee:#6E5642;
+  --serif:'Fraunces',Georgia,serif; --sans:'Hanken Grotesk',-apple-system,sans-serif;
+  font-family:var(--sans);background:var(--ivory);color:var(--espresso);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+.tryauraa-landing *{margin:0;padding:0;box-sizing:border-box}
+.tryauraa-landing a{color:inherit;text-decoration:none}
+.tryauraa-wrap{max-width:1140px;margin:0 auto;padding:0 28px}
+.tryauraa-btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:15px;padding:13px 26px;border-radius:40px;cursor:pointer;border:none;transition:.25s;font-family:var(--sans)}
+.tryauraa-btn-gold{background:var(--gold);color:var(--espresso)}
+.tryauraa-btn-gold:hover{background:var(--bronze);color:#fff;transform:translateY(-2px)}
+.tryauraa-btn-ghost{background:transparent;border:1.5px solid rgba(110,86,66,.3);color:var(--espresso)}
+.tryauraa-btn-ghost:hover{border-color:var(--espresso);background:rgba(110,86,66,.06)}
+
+.tryauraa-nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);background:rgba(250,244,233,.82);border-bottom:1px solid rgba(110,86,66,.12)}
+.tryauraa-nav-in{display:flex;align-items:center;justify-content:space-between;height:72px}
+.tryauraa-wm{font-family:var(--serif);font-size:26px;font-weight:500;letter-spacing:-.01em}
+.tryauraa-wm-a{color:var(--coffee)} .tryauraa-wm-b{color:var(--gold)}
+.tryauraa-nav-links{display:flex;gap:30px;font-size:15px;font-weight:500;color:var(--coffee)}
+.tryauraa-nav-links a:hover{color:var(--espresso)}
+.tryauraa-nav-cta{display:flex;gap:12px;align-items:center}
+@media(max-width:860px){.tryauraa-nav-links{display:none}.tryauraa-nav .tryauraa-btn-ghost{display:none}}
+
+.tryauraa-hero,.tryauraa-section,.tryauraa-demo,.tryauraa-cta-band{scroll-margin-top:80px}
+.tryauraa-hero{position:relative;padding:70px 0 40px;overflow:hidden}
+.tryauraa-hero:before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 12% 18%, rgba(194,161,78,.20), transparent 40%),
+  radial-gradient(circle at 92% 12%, rgba(166,144,111,.18), transparent 42%);pointer-events:none}
+.tryauraa-hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center;position:relative}
+.tryauraa-badge{display:inline-flex;align-items:center;gap:8px;background:var(--warm-white);border:1px solid rgba(110,86,66,.18);padding:7px 15px;border-radius:30px;font-size:13px;font-weight:600;color:var(--coffee);margin-bottom:26px}
+.tryauraa-dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.tryauraa-hero-title{font-family:var(--serif);font-size:clamp(40px,5.6vw,68px);font-weight:400;line-height:1.02;letter-spacing:-.02em;margin-bottom:20px}
+.tryauraa-hero-title em{font-style:italic;color:var(--gold)}
+.tryauraa-sub{font-size:19px;color:var(--coffee);max-width:480px;margin-bottom:32px}
+.tryauraa-hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:24px}
+.tryauraa-hero-mini{font-size:13px;color:var(--taupe);display:flex;gap:18px;flex-wrap:wrap}
+.tryauraa-hero-mini span{display:flex;align-items:center;gap:6px}
+@media(max-width:860px){.tryauraa-hero-grid{grid-template-columns:1fr;gap:36px}}
+
+.tryauraa-demo{background:var(--warm-white);border:1px solid rgba(110,86,66,.16);border-radius:28px;padding:24px;box-shadow:0 24px 60px rgba(46,36,25,.10)}
+.tryauraa-demo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.tryauraa-demo-tag{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.tryauraa-demo-status{font-size:12px;color:var(--coffee);display:flex;align-items:center;gap:6px}
+.tryauraa-live{width:7px;height:7px;border-radius:50%;background:#4caf50;box-shadow:0 0 0 3px rgba(76,175,80,.18)}
+.tryauraa-stage-wrap{position:relative;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 35%, var(--sand), #DCCBAE)}
+.tryauraa-stage-svg{display:block;width:100%;height:auto;transition:opacity .4s ease}
+.tryauraa-stage-wrap.tryauraa-photo-mode .tryauraa-stage-svg{opacity:0;pointer-events:none}
+.tryauraa-stage-photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;z-index:2}
+.tryauraa-stage-photo[hidden]{display:none!important}
+.tryauraa-stage-photo-img{width:100%;height:100%;object-fit:contain;border-radius:12px}
+.tryauraa-shimmer{position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,253,248,.65) 50%,transparent 70%);transform:translateX(-100%);pointer-events:none;opacity:0;z-index:4}
+.tryauraa-stage-wrap.tryauraa-gen .tryauraa-shimmer{animation:tryauraa-scan .85s ease;opacity:1}
+@keyframes tryauraa-scan{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.tryauraa-gen-label{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--espresso);color:#fff;font-size:12px;font-weight:600;padding:6px 14px;border-radius:30px;opacity:0;transition:.2s;display:flex;align-items:center;gap:7px;z-index:5}
+.tryauraa-stage-wrap.tryauraa-gen .tryauraa-gen-label{opacity:1}
+.tryauraa-spin{width:11px;height:11px;border:2px solid rgba(255,255,255,.35);border-top-color:var(--gold);border-radius:50%;animation:tryauraa-sp .6s linear infinite}
+@keyframes tryauraa-sp{to{transform:rotate(360deg)}}
+.tryauraa-garment{opacity:0;transition:opacity .4s ease}
+.tryauraa-garment.tryauraa-on{opacity:1}
+.tryauraa-cat-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--taupe);font-weight:700;margin:16px 0 8px}
+.tryauraa-rack{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.tryauraa-rack.tryauraa-three{grid-template-columns:repeat(3,1fr)}
+.tryauraa-item{cursor:pointer;border:1.5px solid rgba(110,86,66,.16);border-radius:13px;padding:9px 5px;background:var(--ivory);text-align:center;transition:.2s;font-family:var(--sans)}
+.tryauraa-item:hover{border-color:var(--gold);transform:translateY(-2px)}
+.tryauraa-item.tryauraa-active{border-color:var(--gold);background:#F6EAD3;box-shadow:0 4px 14px rgba(194,161,78,.25)}
+.tryauraa-item svg{width:30px;height:30px;display:block;margin:0 auto 5px}
+.tryauraa-item span{font-size:10.5px;font-weight:600;color:var(--coffee);line-height:1.2;display:block}
+.tryauraa-demo-foot{text-align:center;font-size:12.5px;color:var(--taupe);margin-top:14px;font-style:italic}
+
+.tryauraa-logos{padding:38px 0;border-top:1px solid rgba(110,86,66,.1);border-bottom:1px solid rgba(110,86,66,.1)}
+.tryauraa-logos p{text-align:center;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--taupe);font-weight:600;margin-bottom:22px}
+.tryauraa-logo-row{display:flex;justify-content:center;flex-wrap:wrap;gap:36px;align-items:center}
+.tryauraa-logo-row span{font-family:var(--serif);font-size:21px;color:var(--coffee);opacity:.55;letter-spacing:.04em}
+
+.tryauraa-stats{padding:56px 0}
+.tryauraa-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center}
+.tryauraa-stat .tryauraa-n{font-family:var(--serif);font-size:clamp(40px,6vw,60px);color:var(--gold);line-height:1;font-weight:500}
+.tryauraa-stat .tryauraa-l{font-size:15px;color:var(--coffee);margin-top:8px}
+@media(max-width:680px){.tryauraa-stats-grid{grid-template-columns:1fr;gap:34px}}
+
+.tryauraa-section{padding:80px 0}
+.tryauraa-s-label{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+.tryauraa-s-title{font-family:var(--serif);font-size:clamp(28px,4vw,44px);font-weight:400;letter-spacing:-.01em;line-height:1.05}
+.tryauraa-s-intro{color:var(--coffee);font-size:18px;max-width:560px;margin-top:14px}
+.tryauraa-center{text-align:center}.tryauraa-center .tryauraa-s-intro{margin-left:auto;margin-right:auto}
+
+.tryauraa-feat{display:grid;grid-template-columns:1fr 1fr;gap:54px;align-items:center;padding:46px 0;border-top:1px solid rgba(110,86,66,.1)}
+.tryauraa-feat:nth-child(even) .tryauraa-feat-visual{order:-1}
+.tryauraa-feat h3{font-family:var(--serif);font-size:30px;font-weight:400;margin:6px 0 14px}
+.tryauraa-kick{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);font-weight:700}
+.tryauraa-feat p{color:var(--coffee);font-size:17px}
+.tryauraa-feat-visual{border-radius:22px;min-height:280px;display:flex;align-items:center;justify-content:center;padding:30px;position:relative;overflow:hidden}
+.tryauraa-fv-1{background:linear-gradient(140deg,var(--sand),#D9C7A6)}
+.tryauraa-fv-2{background:linear-gradient(140deg,var(--espresso),#473827)}
+.tryauraa-fv-3{background:linear-gradient(140deg,#F0E4CE,var(--sand))}
+.tryauraa-fv-4{background:linear-gradient(140deg,var(--bronze),var(--gold))}
+@media(max-width:760px){.tryauraa-feat{grid-template-columns:1fr;gap:26px}.tryauraa-feat:nth-child(even) .tryauraa-feat-visual{order:0}}
+
+.tryauraa-how{background:var(--warm-white);border-top:1px solid rgba(110,86,66,.12);border-bottom:1px solid rgba(110,86,66,.12)}
+.tryauraa-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:48px}
+.tryauraa-step{position:relative;padding:34px 26px;background:var(--ivory);border:1px solid rgba(110,86,66,.14);border-radius:20px}
+.tryauraa-step .tryauraa-num{font-family:var(--serif);font-size:46px;color:var(--gold);line-height:1;opacity:.9}
+.tryauraa-step h4{font-family:var(--serif);font-size:22px;font-weight:500;margin:12px 0 8px}
+.tryauraa-step p{font-size:15px;color:var(--coffee)}
+@media(max-width:760px){.tryauraa-steps{grid-template-columns:1fr}}
+
+.tryauraa-quote{max-width:760px;margin:0 auto;text-align:center}
+.tryauraa-quote blockquote{font-family:var(--serif);font-size:clamp(22px,3.2vw,32px);line-height:1.35;font-weight:400;font-style:italic}
+.tryauraa-quote blockquote em{color:var(--gold);font-style:italic}
+.tryauraa-who{margin-top:24px;font-size:15px;color:var(--coffee);font-weight:600}
+.tryauraa-who span{display:block;font-weight:400;color:var(--taupe);font-size:14px}
+
+.tryauraa-price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:48px;align-items:stretch}
+.tryauraa-plan{background:var(--warm-white);border:1px solid rgba(110,86,66,.16);border-radius:22px;padding:32px 26px;display:flex;flex-direction:column}
+.tryauraa-plan.tryauraa-feature{border:1.5px solid var(--gold);box-shadow:0 18px 44px rgba(194,161,78,.22);position:relative}
+.tryauraa-plan.tryauraa-feature .tryauraa-tag{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--espresso);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 14px;border-radius:20px}
+.tryauraa-plan h4{font-family:var(--serif);font-size:24px;font-weight:500}
+.tryauraa-plan .tryauraa-pr{font-family:var(--serif);font-size:42px;font-weight:500;margin:10px 0 2px}
+.tryauraa-plan .tryauraa-pr small{font-size:15px;color:var(--taupe);font-family:var(--sans)}
+.tryauraa-plan .tryauraa-trial{font-size:13px;color:var(--taupe);margin-bottom:20px}
+.tryauraa-plan ul{list-style:none;margin-bottom:26px;flex:1}
+.tryauraa-plan li{font-size:14.5px;color:var(--coffee);padding:7px 0 7px 24px;position:relative}
+.tryauraa-plan li:before{content:"";position:absolute;left:0;top:13px;width:11px;height:6px;border-left:2px solid var(--gold);border-bottom:2px solid var(--gold);transform:rotate(-45deg)}
+.tryauraa-plan .tryauraa-btn{width:100%;justify-content:center}
+@media(max-width:760px){.tryauraa-price-grid{grid-template-columns:1fr}}
+
+.tryauraa-faq{max-width:780px;margin:42px auto 0}
+.tryauraa-q{border-bottom:1px solid rgba(110,86,66,.16)}
+.tryauraa-q button{width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:22px 0;font-size:18px;font-weight:600;font-family:var(--sans);color:var(--espresso);display:flex;justify-content:space-between;align-items:center;gap:16px}
+.tryauraa-q .tryauraa-ic{font-family:var(--serif);font-size:26px;color:var(--gold);transition:.3s;flex-shrink:0}
+.tryauraa-q.tryauraa-open .tryauraa-ic{transform:rotate(45deg)}
+.tryauraa-q .tryauraa-ans{max-height:0;overflow:hidden;transition:max-height .35s ease;color:var(--coffee);font-size:16px}
+.tryauraa-q.tryauraa-open .tryauraa-ans{max-height:220px}
+.tryauraa-q .tryauraa-ans p{padding-bottom:22px}
+
+.tryauraa-cta-band{margin:0 28px 80px;border-radius:30px;background:linear-gradient(135deg,var(--espresso),#43321F);color:#fff;padding:64px 40px;text-align:center;position:relative;overflow:hidden}
+.tryauraa-cta-band:before{content:"";position:absolute;top:-60px;right:-40px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,var(--gold),transparent 70%);opacity:.4}
+.tryauraa-cta-band h2{font-family:var(--serif);font-size:clamp(30px,4.5vw,46px);font-weight:400;position:relative;margin-bottom:10px}
+.tryauraa-cta-band h2 em{font-style:italic;color:var(--gold)}
+.tryauraa-cta-band p{color:rgba(255,255,255,.75);max-width:460px;margin:0 auto 28px;position:relative}
+.tryauraa-cta-band .tryauraa-btn-gold{position:relative}
+
+.tryauraa-footer{background:var(--espresso);color:rgba(255,255,255,.6);padding:56px 0 36px}
+.tryauraa-foot-grid{display:flex;justify-content:space-between;flex-wrap:wrap;gap:30px;align-items:flex-start}
+.tryauraa-foot-wm{font-family:var(--serif);font-size:26px;color:#fff}
+.tryauraa-foot-wm .tryauraa-wm-b{color:var(--gold)}
+.tryauraa-foot-tag{font-size:14px;margin-top:8px;color:rgba(255,255,255,.55)}
+.tryauraa-foot-links{display:flex;gap:40px;flex-wrap:wrap}
+.tryauraa-foot-col h5{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:14px}
+.tryauraa-foot-col a{display:block;font-size:14px;padding:5px 0;color:rgba(255,255,255,.7)}
+.tryauraa-foot-col a:hover{color:var(--gold)}
+.tryauraa-foot-bot{margin-top:40px;padding-top:24px;border-top:1px solid rgba(255,255,255,.12);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+
+.tryauraa-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+.tryauraa-reveal.tryauraa-in{opacity:1;transform:none}
+{% endstylesheet %}
+
+{% javascript %}
+(function () {
+  const sectionId = '{{ section.id }}';
+  const root = document.getElementById('tryauraa-' + sectionId);
+  if (!root) return;
+
+  const stage = document.getElementById('tryauraa-stage-' + sectionId);
+  const formFem = document.getElementById('tryauraa-form-fem-' + sectionId);
+  const formMale = document.getElementById('tryauraa-form-male-' + sectionId);
+  const tee = document.getElementById('tryauraa-g-tee-' + sectionId);
+  const teeBody = document.getElementById('tryauraa-tee-body-' + sectionId);
+  const stageSvg = document.getElementById('tryauraa-stage-svg-' + sectionId);
+  const photoWrap = document.getElementById('tryauraa-photo-wrap-' + sectionId);
+  const photoImg = document.getElementById('tryauraa-photo-' + sectionId);
+  const rack = root.querySelectorAll('.tryauraa-item');
+  let timer = null;
+
+  const tryonImages = {
+    dress_1: root.dataset.tryonDress1 || '',
+    dress_2: root.dataset.tryonDress2 || '',
+    tee_white: root.dataset.tryonTeeWhite || '',
+    tee_black: root.dataset.tryonTeeBlack || '',
+    tee_sand: root.dataset.tryonTeeSand || ''
+  };
+
+  function clearGarments() {
+    root.querySelectorAll('.tryauraa-garment').forEach(function (g) {
+      g.classList.remove('tryauraa-on');
+    });
+  }
+
+  function showSvgMode() {
+    stage.classList.remove('tryauraa-photo-mode');
+    if (photoWrap) photoWrap.hidden = true;
+    if (stageSvg) stageSvg.hidden = false;
+  }
+
+  function showPhotoMode(url) {
+    if (!photoWrap || !photoImg || !url) return false;
+    photoImg.src = url;
+    photoImg.alt = 'Virtual try-on preview';
+    photoWrap.hidden = false;
+    stage.classList.add('tryauraa-photo-mode');
+    return true;
+  }
+
+  rack.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      rack.forEach(function (i) { i.classList.remove('tryauraa-active'); });
+      btn.classList.add('tryauraa-active');
+      clearTimeout(timer);
+      stage.classList.add('tryauraa-gen');
+
+      timer = setTimeout(function () {
+        stage.classList.remove('tryauraa-gen');
+        const tryonKey = btn.dataset.tryonKey;
+        const imageUrl = tryonImages[tryonKey];
+
+        if (imageUrl && showPhotoMode(imageUrl)) {
+          return;
+        }
+
+        showSvgMode();
+
+        if (btn.dataset.type === 'tee') {
+          formFem.style.display = 'none';
+          formMale.style.display = '';
+          teeBody.setAttribute('fill', btn.dataset.color);
+          tee.classList.add('tryauraa-on');
+        } else {
+          formMale.style.display = 'none';
+          formFem.style.display = '';
+          var garment = document.getElementById(btn.dataset.garment);
+          if (garment) garment.classList.add('tryauraa-on');
+        }
+      }, 850);
+    });
+  });
+
+  root.querySelectorAll('.tryauraa-q button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      b.parentElement.classList.toggle('tryauraa-open');
+    });
+  });
+
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('tryauraa-in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+
+  root.querySelectorAll('.tryauraa-reveal').forEach(function (el) {
+    io.observe(el);
+  });
+})();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Tryauraa Landing",
+  "tag": "section",
+  "class": "tryauraa-landing-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Hero"
+    },
+    {
+      "type": "text",
+      "id": "hero_badge",
+      "label": "Hero badge text",
+      "default": "Built for Shopify fashion brands"
+    },
+    {
+      "type": "html",
+      "id": "hero_heading",
+      "label": "Hero heading",
+      "default": "Let shoppers see it <em>on themselves</em> before they buy."
+    },
+    {
+      "type": "textarea",
+      "id": "hero_subline",
+      "label": "Hero subline",
+      "default": "Tryauraa adds AI virtual try-on to your product pages in minutes. Works for menswear and womenswear. No code."
+    },
+    {
+      "type": "text",
+      "id": "primary_cta_label",
+      "label": "Primary CTA label",
+      "default": "Add to Shopify"
+    },
+    {
+      "type": "url",
+      "id": "primary_cta_url",
+      "label": "Primary CTA URL"
+    },
+    {
+      "type": "text",
+      "id": "secondary_cta_label",
+      "label": "Secondary CTA label",
+      "default": "See it live"
+    },
+    {
+      "type": "url",
+      "id": "secondary_cta_url",
+      "label": "Secondary CTA URL"
+    },
+    {
+      "type": "url",
+      "id": "install_url",
+      "label": "App Store install URL",
+      "info": "Used for all Add to Shopify buttons"
+    },
+    {
+      "type": "header",
+      "content": "Try-on demo images"
+    },
+    {
+      "type": "paragraph",
+      "content": "Upload real product photos to replace the SVG garments in the demo. Leave blank to use the default SVG illustrations."
+    },
+    {
+      "type": "image_picker",
+      "id": "tryon_dress_1",
+      "label": "Slip dress try-on image"
+    },
+    {
+      "type": "image_picker",
+      "id": "tryon_dress_2",
+      "label": "Wrap dress try-on image"
+    },
+    {
+      "type": "image_picker",
+      "id": "tryon_tee_white",
+      "label": "White tee try-on image"
+    },
+    {
+      "type": "image_picker",
+      "id": "tryon_tee_black",
+      "label": "Black tee try-on image"
+    },
+    {
+      "type": "image_picker",
+      "id": "tryon_tee_sand",
+      "label": "Sand tee try-on image"
+    },
+    {
+      "type": "header",
+      "content": "Stats"
+    },
+    {
+      "type": "text",
+      "id": "stat_1_number",
+      "label": "Stat 1 number",
+      "default": "3 sec"
+    },
+    {
+      "type": "text",
+      "id": "stat_1_label",
+      "label": "Stat 1 label",
+      "default": "to generate a try-on image"
+    },
+    {
+      "type": "text",
+      "id": "stat_2_number",
+      "label": "Stat 2 number",
+      "default": "0"
+    },
+    {
+      "type": "text",
+      "id": "stat_2_label",
+      "label": "Stat 2 label",
+      "default": "lines of code to install"
+    },
+    {
+      "type": "text",
+      "id": "stat_3_number",
+      "label": "Stat 3 number",
+      "default": "Any"
+    },
+    {
+      "type": "text",
+      "id": "stat_3_label",
+      "label": "Stat 3 label",
+      "default": "Shopify theme, any language"
+    },
+    {
+      "type": "header",
+      "content": "Feature 1"
+    },
+    {
+      "type": "text",
+      "id": "feature_1_kicker",
+      "label": "Kicker",
+      "default": "AI Try-On"
+    },
+    {
+      "type": "text",
+      "id": "feature_1_title",
+      "label": "Title",
+      "default": "Show shoppers how good they look"
+    },
+    {
+      "type": "textarea",
+      "id": "feature_1_body",
+      "label": "Body",
+      "default": "Tryauraa uses AI image generation to place your products on real shopper photos. The fit looks natural, the lighting matches, and the result feels like a real photoshoot."
+    },
+    {
+      "type": "header",
+      "content": "Feature 2"
+    },
+    {
+      "type": "text",
+      "id": "feature_2_kicker",
+      "label": "Kicker",
+      "default": "Effortless Setup"
+    },
+    {
+      "type": "text",
+      "id": "feature_2_title",
+      "label": "Title",
+      "default": "Live on your store in minutes"
+    },
+    {
+      "type": "textarea",
+      "id": "feature_2_body",
+      "label": "Body",
+      "default": "Install from the Shopify App Store, pick the products you want, and publish. No theme edits, no developer, no waiting. Tryauraa fits your storefront out of the box."
+    },
+    {
+      "type": "header",
+      "content": "Feature 3"
+    },
+    {
+      "type": "text",
+      "id": "feature_3_kicker",
+      "label": "Kicker",
+      "default": "Conversion Engine"
+    },
+    {
+      "type": "text",
+      "id": "feature_3_title",
+      "label": "Title",
+      "default": "Turn browsers into buyers"
+    },
+    {
+      "type": "textarea",
+      "id": "feature_3_body",
+      "label": "Body",
+      "default": "When shoppers see a product on themselves, doubt drops and confidence rises. That means more completed checkouts and fewer items sent back. Track every try-on from your dashboard."
+    },
+    {
+      "type": "header",
+      "content": "Feature 4"
+    },
+    {
+      "type": "text",
+      "id": "feature_4_kicker",
+      "label": "Kicker",
+      "default": "Marketing Activations"
+    },
+    {
+      "type": "text",
+      "id": "feature_4_title",
+      "label": "Title",
+      "default": "Hype every drop and campaign"
+    },
+    {
+      "type": "textarea",
+      "id": "feature_4_body",
+      "label": "Body",
+      "default": "Use Tryauraa images in email, on launch pages, and across social. Embed try-on results as product images so your shoppers feel like models and your collections feel alive."
+    },
+    {
+      "type": "header",
+      "content": "Testimonial"
+    },
+    {
+      "type": "html",
+      "id": "testimonial_quote",
+      "label": "Quote",
+      "default": "Our shoppers spend longer on product pages and message us less about sizing. Tryauraa feels like a <em>fitting room</em> built right into the store."
+    },
+    {
+      "type": "text",
+      "id": "testimonial_author",
+      "label": "Author",
+      "default": "Founder, premium fashion label"
+    },
+    {
+      "type": "text",
+      "id": "testimonial_author_role",
+      "label": "Author subtitle",
+      "default": "Verified Shopify merchant"
+    },
+    {
+      "type": "header",
+      "content": "Pricing tier 1"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_name",
+      "label": "Plan name",
+      "default": "Debut"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_price",
+      "label": "Price",
+      "default": "$19"
+    },
+    {
+      "type": "textarea",
+      "id": "tier_1_features",
+      "label": "Features (one per line)",
+      "default": "100 try-ons / month\nFull customization\nEmbed on product pages\nEmail support"
+    },
+    {
+      "type": "text",
+      "id": "tier_1_button_label",
+      "label": "Button label",
+      "default": "Start free"
+    },
+    {
+      "type": "url",
+      "id": "tier_1_button_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Pricing tier 2"
+    },
+    {
+      "type": "checkbox",
+      "id": "tier_2_featured",
+      "label": "Show Most popular badge",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "tier_2_name",
+      "label": "Plan name",
+      "default": "Runway"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_price",
+      "label": "Price",
+      "default": "$49"
+    },
+    {
+      "type": "textarea",
+      "id": "tier_2_features",
+      "label": "Features (one per line)",
+      "default": "500 try-ons / month\nFull customization & embeds\nMarketing image exports\nPriority support\nDashboard analytics"
+    },
+    {
+      "type": "text",
+      "id": "tier_2_button_label",
+      "label": "Button label",
+      "default": "Start free"
+    },
+    {
+      "type": "url",
+      "id": "tier_2_button_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Pricing tier 3"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_name",
+      "label": "Plan name",
+      "default": "Couture"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_price",
+      "label": "Price",
+      "default": "$299"
+    },
+    {
+      "type": "textarea",
+      "id": "tier_3_features",
+      "label": "Features (one per line)",
+      "default": "2,000 try-ons / month\nEverything in Runway\nDedicated success manager\nPriority image generation\nCustom events & dev docs"
+    },
+    {
+      "type": "text",
+      "id": "tier_3_button_label",
+      "label": "Button label",
+      "default": "Talk to us"
+    },
+    {
+      "type": "url",
+      "id": "tier_3_button_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "header",
+      "content": "Footer"
+    },
+    {
+      "type": "text",
+      "id": "footer_tagline",
+      "label": "Footer tagline",
+      "default": "Wear Your Aura Before Purchase"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "brand",
+      "name": "Logo name",
+      "settings": [
+        {
+          "type": "text",
+          "id": "name",
+          "label": "Brand name",
+          "default": "Brand name"
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Footer link",
+      "settings": [
+        {
+          "type": "select",
+          "id": "column",
+          "label": "Column",
+          "options": [
+            { "value": "product", "label": "Product" },
+            { "value": "company", "label": "Company" },
+            { "value": "legal", "label": "Legal" }
+          ],
+          "default": "product"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Link label",
+          "default": "Link"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link URL"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Tryauraa Landing",
+      "blocks": [
+        { "type": "brand", "settings": { "name": "ATELIER NOIR" } },
+        { "type": "brand", "settings": { "name": "Maison Vela" } },
+        { "type": "brand", "settings": { "name": "LUXE & CO" } },
+        { "type": "brand", "settings": { "name": "Sienna" } },
+        { "type": "brand", "settings": { "name": "VERA STUDIO" } },
+        { "type": "brand", "settings": { "name": "Olen" } },
+        { "type": "link", "settings": { "column": "product", "label": "Features", "url": "#tryauraa-features" } },
+        { "type": "link", "settings": { "column": "product", "label": "How it works", "url": "#tryauraa-how" } },
+        { "type": "link", "settings": { "column": "product", "label": "Pricing", "url": "#tryauraa-pricing" } },
+        { "type": "link", "settings": { "column": "product", "label": "Add to Shopify", "url": "#tryauraa-install" } },
+        { "type": "link", "settings": { "column": "company", "label": "About", "url": "/" } },
+        { "type": "link", "settings": { "column": "company", "label": "Contact", "url": "/" } },
+        { "type": "link", "settings": { "column": "company", "label": "Docs", "url": "/" } },
+        { "type": "link", "settings": { "column": "legal", "label": "Privacy Policy", "url": "/" } },
+        { "type": "link", "settings": { "column": "legal", "label": "Terms of Service", "url": "/" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

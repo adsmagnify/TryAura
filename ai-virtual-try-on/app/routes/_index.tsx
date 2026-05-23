@@ -729,7 +729,7 @@ export default function Index() {
 
                 <div className={`alert ${storefrontReady ? "alert-success" : "alert-info"}`}>
                   {storefrontReady
-                    ? "✓ Virtual Try-On is active on your product pages."
+                    ? "✓ Virtual Try-On is active on your storefront."
                     : "Enable the TryAura app embed on your theme — no code editing required."}
                 </div>
 
@@ -756,7 +756,7 @@ export default function Index() {
                     <InstallStep
                       done={storefrontInstall.embedEnabled}
                       title="Theme embed enabled"
-                      detail="Turn on “Virtual Try-On” under Theme settings → App embeds, then save."
+                      detail="Turn on “Virtual Try-On” under Theme settings → App embeds (all pages), then save."
                     />
                   </div>
 

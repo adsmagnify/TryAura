@@ -1,5 +1,5 @@
 /**
- * TryAura Storefront Widget — async job polling
+ * TryAura Storefront Widget — works on product pages, home, collection, and custom themes.
  */
 (function () {
   "use strict";
@@ -21,7 +21,9 @@
 
   let modal = null;
   let productId = null;
+  let garmentImageUrl = null;
   let sessionId = null;
+  let mountedCardRoots = new WeakSet();
 
   function normalizeShopDomain(shop) {
     if (!shop) return null;
@@ -85,27 +87,62 @@
     return null;
   }
 
+  function applyProductContext(id, imageUrl) {
+    var pid = normalizeProductId(id);
+    if (pid) productId = pid;
+    if (imageUrl) garmentImageUrl = imageUrl;
+    if (window.TryOnConfig) {
+      if (pid) window.TryOnConfig.productId = pid;
+      if (imageUrl) window.TryOnConfig.garmentImageUrl = imageUrl;
+    }
+  }
+
+  function parseProductJsonScripts() {
+    var selectors = [
+      'script[type="application/json"][data-product-json]',
+      'script[type="application/json"][id*="ProductJson"]',
+      'script[type="application/json"][id*="product-json"]',
+    ];
+    selectors.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (script) {
+        try {
+          var data = JSON.parse(script.textContent);
+          if (data && (data.id || data.product_id)) {
+            applyProductContext(
+              data.id || data.product_id,
+              data.featured_image || (data.featured_image && data.featured_image.src) || data.image
+            );
+          }
+        } catch (e) { /* ignore */ }
+      });
+    });
+  }
+
   function detectProductFromPage() {
-    if (window.TryOnConfig && window.TryOnConfig.productId) {
-      productId = normalizeProductId(window.TryOnConfig.productId);
-      return;
+    if (window.TryOnConfig) {
+      applyProductContext(window.TryOnConfig.productId, window.TryOnConfig.garmentImageUrl);
     }
     if (window.ShopifyAnalytics && window.ShopifyAnalytics.meta && window.ShopifyAnalytics.meta.product) {
-      productId =
-        normalizeProductId(window.ShopifyAnalytics.meta.product.id) ||
-        normalizeProductId(window.ShopifyAnalytics.meta.product.gid) ||
-        productId;
+      var p = window.ShopifyAnalytics.meta.product;
+      applyProductContext(p.id || p.gid, null);
     }
     if (window.Shopify && window.Shopify.theme && window.Shopify.theme.product) {
-      productId = normalizeProductId(window.Shopify.theme.product.id) || productId;
+      var tp = window.Shopify.theme.product;
+      var img =
+        tp.featured_image ||
+        (tp.featured_image && tp.featured_image.src) ||
+        (tp.images && tp.images[0]) ||
+        null;
+      applyProductContext(tp.id, img);
     }
+
+    parseProductJsonScripts();
 
     document.querySelectorAll('script[type="application/ld+json"]').forEach(function (script) {
       try {
         const data = JSON.parse(script.textContent);
         if (data["@type"] === "Product") {
-          var fromLd = normalizeProductId(data.productID || data["@id"]);
-          if (fromLd) productId = fromLd;
+          applyProductContext(data.productID || data["@id"], null);
         }
       } catch (e) { /* ignore */ }
     });
@@ -114,34 +151,63 @@
       document.querySelector('meta[property="og:product_id"]') ||
       document.querySelector('meta[name="product-id"]') ||
       document.querySelector('meta[property="product:id"]');
-    if (meta && !productId) productId = normalizeProductId(meta.getAttribute("content"));
+    if (meta) applyProductContext(meta.getAttribute("content"), null);
 
     const productForm = document.querySelector('form[action*="/cart/add"]');
-    if (productForm && !productId) {
-      const pid = productForm.getAttribute("data-product-id");
-      if (pid) productId = normalizeProductId(pid);
+    if (productForm) {
+      var nestedPid = productForm.querySelector("[data-product-id]");
+      const pid =
+        productForm.getAttribute("data-product-id") ||
+        (nestedPid && nestedPid.getAttribute("data-product-id"));
+      if (pid) applyProductContext(pid, null);
     }
   }
 
-  function findCartAnchor() {
+  function getProductHandleFromPath() {
+    var match = window.location.pathname.match(/\/products\/([^/?#]+)/i);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  async function fetchProductByHandle(handle) {
+    if (!handle) return null;
+    try {
+      var res = await fetch("/products/" + encodeURIComponent(handle) + ".js", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function detectProductFromUrl() {
+    if (productId) return;
+    var handle = getProductHandleFromPath();
+    if (!handle) return;
+    var data = await fetchProductByHandle(handle);
+    if (!data) return;
+    var img = data.featured_image || (data.images && data.images[0]) || null;
+    applyProductContext(data.id, img);
+  }
+
+  function findCartAnchor(root) {
+    var scope = root && root.querySelector ? root : document;
     return (
-      document.querySelector('button[type="submit"][name="add"]') ||
-      document.querySelector('form[action*="/cart/add"] button[type="submit"]') ||
-      document.querySelector(".product-form__submit") ||
-      document.querySelector("[data-add-to-cart]") ||
-      document.querySelector("buy-buttons button") ||
-      document.querySelector(".shopify-payment-button") ||
-      document.querySelector('[data-shopify="payment-button"]') ||
-      document.querySelector(".product-form") ||
-      document.querySelector("main product-form") ||
-      document.querySelector(".product__info")
+      scope.querySelector('button[type="submit"][name="add"]') ||
+      scope.querySelector('form[action*="/cart/add"] button[type="submit"]') ||
+      scope.querySelector(".product-form__submit") ||
+      scope.querySelector("[data-add-to-cart]") ||
+      scope.querySelector("buy-buttons button") ||
+      scope.querySelector(".shopify-payment-button") ||
+      scope.querySelector('[data-shopify="payment-button"]') ||
+      scope.querySelector(".product-form") ||
+      scope.querySelector("main product-form") ||
+      scope.querySelector(".product__info")
     );
   }
 
-  function addTryOnButton() {
-    const anchor = findCartAnchor();
-    if (!anchor || document.querySelector(".try-on-button")) return false;
-
+  function createTryOnButton(onClick) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "try-on-button";
@@ -151,11 +217,14 @@
       "background:" + CONFIG.BUTTON_COLOR + ";color:" + CONFIG.BUTTON_TEXT_COLOR + ";" +
       "border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:12px;" +
       "width:100%;max-width:100%;box-sizing:border-box;";
+    button.addEventListener("click", onClick || openModal);
+    return button;
+  }
 
-    button.addEventListener("click", openModal);
-
+  function insertButtonNearAnchor(anchor, button) {
+    if (!anchor) return false;
     const parent = anchor.parentNode || anchor;
-    if (anchor.tagName === "FORM" || anchor.classList && anchor.classList.contains("product-form")) {
+    if (anchor.tagName === "FORM" || (anchor.classList && anchor.classList.contains("product-form"))) {
       anchor.appendChild(button);
     } else {
       parent.insertBefore(button, anchor.nextSibling);
@@ -163,37 +232,155 @@
     return true;
   }
 
-  function watchForCartButton() {
-    if (addTryOnButton()) return;
+  function addTryOnButton(root) {
+    var scope = root && root.querySelector ? root : document;
+    if (scope.querySelector && scope.querySelector(".try-on-button")) return false;
+
+    const anchor = findCartAnchor(scope);
+    if (!anchor) return false;
+
+    const button = createTryOnButton(openModal);
+    return insertButtonNearAnchor(anchor, button);
+  }
+
+  function watchForCartButton(root) {
+    if (addTryOnButton(root)) return;
     var attempts = 0;
     var timer = setInterval(function () {
       attempts += 1;
-      if (addTryOnButton() || attempts > 40) clearInterval(timer);
+      if (addTryOnButton(root) || attempts > 40) clearInterval(timer);
     }, 500);
+  }
+
+  function findProductCardRoots() {
+    var roots = [];
+    var seen = new Set();
+
+    function addRoot(el) {
+      if (!el || seen.has(el)) return;
+      seen.add(el);
+      roots.push(el);
+    }
+
+    document.querySelectorAll("form[action*='/cart/add'][data-product-id]").forEach(function (form) {
+      addRoot(form.closest(".card, .product-card, .grid__item, .product-grid__item, article, li") || form);
+    });
+
+    document.querySelectorAll("[data-product-id]").forEach(function (el) {
+      var id = normalizeProductId(el.getAttribute("data-product-id"));
+      if (!id) return;
+      addRoot(el.closest(".card, .product-card, .grid__item, .product-grid__item, article, li, .product-item") || el);
+    });
+
+    document.querySelectorAll('a[href*="/products/"]').forEach(function (link) {
+      var card = link.closest(".card, .product-card, .grid__item, .product-grid__item, article, li, .product-item");
+      if (card) addRoot(card);
+    });
+
+    return roots;
+  }
+
+  async function mountOnProductCards() {
+    var roots = findProductCardRoots();
+    if (!roots.length) return false;
+
+    var mounted = false;
+    for (var i = 0; i < roots.length; i++) {
+      var root = roots[i];
+      if (mountedCardRoots.has(root) || root.querySelector(".try-on-button")) continue;
+
+      var idEl = root.querySelector("[data-product-id]") || root.querySelector("form[action*='/cart/add']");
+      var pid = idEl ? normalizeProductId(idEl.getAttribute("data-product-id")) : null;
+
+      var link = root.querySelector('a[href*="/products/"]');
+      var handle = null;
+      if (link) {
+        var m = link.getAttribute("href").match(/\/products\/([^/?#]+)/i);
+        if (m) handle = decodeURIComponent(m[1]);
+      }
+
+      if (!pid && handle) {
+        var data = await fetchProductByHandle(handle);
+        if (data) pid = normalizeProductId(data.id);
+      }
+      if (!pid) continue;
+
+      var anchor =
+        findCartAnchor(root) ||
+        root.querySelector(".card__content, .product-card__info, .card-information, .product-item__info") ||
+        root;
+
+      var button = createTryOnButton(function () {
+        if (handle) {
+          fetchProductByHandle(handle).then(function (data) {
+            var img = data && (data.featured_image || (data.images && data.images[0])) || null;
+            applyProductContext(pid, img);
+            openModal();
+          });
+          return;
+        }
+        applyProductContext(pid, garmentImageUrl);
+        openModal();
+      });
+      button.style.marginTop = "8px";
+      button.style.width = "100%";
+
+      if (anchor === root) {
+        root.appendChild(button);
+      } else {
+        insertButtonNearAnchor(anchor, button);
+      }
+
+      mountedCardRoots.add(root);
+      mounted = true;
+    }
+    return mounted;
+  }
+
+  function observeDomForAnchors() {
+    if (typeof MutationObserver === "undefined") return;
+    var debounce = null;
+    var observer = new MutationObserver(function () {
+      clearTimeout(debounce);
+      debounce = setTimeout(function () {
+        if (productId) watchForCartButton();
+        else mountOnProductCards();
+      }, 300);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   async function init() {
     resolveBackendUrl();
     detectProductFromPage();
-
-    if (!productId) {
-      detectProductFromPage();
-    }
+    await detectProductFromUrl();
 
     const enabled = await loadStoreSettings();
     if (!enabled) return;
 
-    if (!productId) {
-      console.warn("[TryAura] Could not detect product id on this page.");
+    if (productId) {
+      watchForCartButton();
+      observeDomForAnchors();
       return;
     }
 
-    watchForCartButton();
+    var cardsMounted = await mountOnProductCards();
+    if (!cardsMounted) {
+      console.warn("[TryAura] No product detected on this page. Try-on appears on product pages and pages with product cards.");
+      return;
+    }
+
+    observeDomForAnchors();
   }
 
   function openModal() {
     sessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
     const shop = getShopDomain();
+
+    if (!productId) {
+      alert("Could not detect which product to try on. Open a product page and try again.");
+      return;
+    }
 
     if (!CONFIG.BACKEND_URL || CONFIG.BACKEND_URL.indexOf("your-backend") !== -1) {
       alert("Try-On is not configured. Contact the store owner.");
@@ -244,6 +431,8 @@
     const errorEl = panel.querySelector(".error-message");
 
     let selectedFile = null;
+    var configImage =
+      (window.TryOnConfig && window.TryOnConfig.garmentImageUrl) || garmentImageUrl;
 
     closeBtn.addEventListener("click", closeModal);
     modal.addEventListener("click", function (e) {
@@ -291,9 +480,7 @@
       const formData = new FormData();
       formData.append("personImage", selectedFile);
       if (productId) formData.append("productId", productId);
-      if (window.TryOnConfig && window.TryOnConfig.garmentImageUrl) {
-        formData.append("garmentImageUrl", window.TryOnConfig.garmentImageUrl);
-      }
+      if (configImage) formData.append("garmentImageUrl", configImage);
       formData.append("shop", shop);
       formData.append("sessionId", sessionId);
       if (customerId) formData.append("customerId", String(customerId));
